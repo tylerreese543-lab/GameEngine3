@@ -123,10 +123,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Instance.h" />
+    <ClInclude Include="GameInstance.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Instance.cpp" />
+    <ClCompile Include="GameEngine3.cpp" />
+    <ClCompile Include="GameInstance.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
