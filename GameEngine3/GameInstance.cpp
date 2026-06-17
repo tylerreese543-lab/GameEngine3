@@ -1,11 +1,17 @@
 #include "GameInstance.h"
 
-const std::string Instance::instanceTypeNames[Instance::numInstanceTypes] = {
+const std::string Instance::instanceTypeNames[Instance::InstanceType_Count] = {
 	"Undefined",
-	"Base"
+	"Base",
+	"RenderObject",
+	"Mesh",
+	"Resource",
+	"ShaderResource",
+	"ShaderProgram"
+
 };
 Instance::Instance() {
-	id = 0;
+	instanceId = 0;
 	name = "Instance";
 	parent = nullptr;
 	type = InstanceType_Undefined;
@@ -37,7 +43,7 @@ int Instance::addChild(Instance* child) {
 		}
 	}
 	children.push_back(child);
-	child->setParent(this);
+	child->parent = this;
 	return 0;
 }
 
@@ -68,7 +74,7 @@ Instance* Instance::getChildFromName(const std::string& name) {
 
 Instance* Instance::getChildFromId(int id) {
 	for (Instance* child : children) {
-		if (child->id == id) {
+		if (child->instanceId == id) {
 			return child;
 		}
 	}
@@ -85,8 +91,36 @@ Instance* Instance::getChildFromIndex(int index) {
 }
 
 std::string Instance::getInstanceNameFromType(int type) {
-	if (type < 0 || type >= numInstanceTypes) {
+	if (type < 0 || type >= InstanceType_Count) {
 		return "Unknown"; // Invalid type
 	}
 	return instanceTypeNames[type];
+}
+
+int Instance::save(FILE* file) {
+	fwrite(&type, sizeof(int), 1, file);
+	fwrite(&instanceId, sizeof(int), 1, file);
+	size_t nameLength = name.size();
+	fwrite(&nameLength, sizeof(size_t), 1, file);
+	fwrite(name.c_str(), sizeof(char), nameLength, file);
+	return 0; //TODO: return the size of the data written to the file
+}
+
+int Instance::load(void* data) {
+	int o = 0;
+	type = *(int*)offset(data, o);
+	o += sizeof(int);
+	instanceId = *(int*)offset(data, o);
+	o += sizeof(int);
+	size_t nameLength = *(size_t*)offset(data, o);
+	o += sizeof(size_t);
+	char* nameData = (char*)offset(data, o);
+	name = std::string(nameData, nameLength);
+	o += nameLength * sizeof(char);
+
+	return o;
+}
+
+void* offset(void* ptr, size_t offset) {
+	return (void*)((char*)ptr + offset);
 }

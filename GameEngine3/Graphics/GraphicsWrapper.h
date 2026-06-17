@@ -4,3 +4,5 @@
 
 
 //basic functions made easier to use for graphics. More to come
+
+int getSizeOfType(GLenum type);

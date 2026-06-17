@@ -6,8 +6,10 @@ class Buffer {
 	GLuint id;
 	GLenum target;
 	GLenum usage;
-	GLsizeiptr size;
+	GLint element_size;
 	void* data;
+	GLuint size;
+	Buffer();
 	Buffer(GLenum target, GLsizeiptr size, GLenum usage);
 	virtual ~Buffer();
 	virtual int generate();

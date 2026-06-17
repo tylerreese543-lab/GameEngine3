@@ -1,6 +1,7 @@
 #pragma once
 
 #include "graphics_include.h"
+#include "GraphicsWrapper.h"
 #include <vector>
 
 class BufferLayoutElement {
@@ -8,12 +9,10 @@ public:
 	GLenum type;
 	GLuint count;
 	GLboolean normalized;
-	BufferLayoutElement() {}
+	BufferLayoutElement();
 	BufferLayoutElement(GLenum type, GLuint count);
 	BufferLayoutElement(GLuint count); //Assumes GL_FLOAT and GL_FALSE for normalized
 	BufferLayoutElement(GLenum type, GLuint count, GLboolean normalized);
-
-	static int getSizeOfType(GLenum type);
 
 };
 class BufferLayout {

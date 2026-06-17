@@ -1,5 +1,4 @@
 #include "BufferLayout.h"
-
 BufferLayoutElement::BufferLayoutElement(GLenum type, GLuint count) {
 	this->type = type;
 	this->count = count;
@@ -11,36 +10,20 @@ BufferLayoutElement::BufferLayoutElement(GLuint count) {
 	this->count = count;
 	this->normalized = GL_FALSE;
 }
-
+BufferLayoutElement::BufferLayoutElement() {
+	this->type = GL_FLOAT;
+	this->count = 1;
+	this->normalized = GL_FALSE;
+}
 BufferLayoutElement::BufferLayoutElement(GLenum type, GLuint count, GLboolean normalized) {
 	this->type = type;
 	this->count = count;
 	this->normalized = normalized;
 }
-
-int BufferLayoutElement::getSizeOfType(GLenum type) {
-	switch (type) {
-	case GL_DOUBLE:
-		return 8;
-	case GL_FLOAT:
-	case GL_INT:
-	case GL_UNSIGNED_INT:
-		return 4;
-	case GL_SHORT:
-	case GL_UNSIGNED_SHORT:
-		return 2;
-	case GL_UNSIGNED_BYTE:
-	case GL_BYTE:
-		return 1;
-	default:
-		return 0;
-	}
-}
-
 GLuint BufferLayout::getStride() {
 	GLuint stride = 0;
 	for (BufferLayoutElement element : elements) {
-		stride += element.count * BufferLayoutElement::getSizeOfType(element.type);
+		stride += element.count * getSizeOfType(element.type);
 	}
 	return stride;
 }
@@ -66,11 +49,14 @@ void BufferLayout::clear() {
 }
 void BufferLayout::apply() {
 	GLuint offset = 0;
+	GLuint index = 0;
 	for (BufferLayoutElement element : elements) {
-		glEnableVertexAttribArray(offset);
+		glEnableVertexAttribArray(index);
 		glVertexAttribPointer(offset, element.count, element.type, element.normalized, getStride(), (const void*)(uintptr_t)offset);
-		offset += element.count * BufferLayoutElement::getSizeOfType(element.type);
+		offset += element.count * getSizeOfType(element.type);
+		++index;
 	}
+	printf("Ac: %d\n", getStride());
 }
 
 void BufferLayout::remove() {

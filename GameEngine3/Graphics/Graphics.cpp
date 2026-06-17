@@ -26,11 +26,15 @@ int Graphics::initializeWindow(int width, int height, const char* title) {
 	}
 	window = glfwCreateWindow(width, height, title, nullptr, nullptr);
 	if (window == nullptr) {
-		glfwTerminate();
+		const char* errorDescription;
+		int errorCode = glfwGetError(&errorDescription);
+		printf("Failed to create GLFW window: %s (Error code: %d)\n", errorDescription, errorCode);
 		return -1;
 	}
 	glfwMakeContextCurrent(window);
-	if (glewInit() != GLEW_OK) {
+	int err = glewInit();
+	if (err != GLEW_OK) {
+		printf("Failed to initialize GLEW: %s\n", glewGetErrorString(err));
 		return -1;
 	}
 	glViewport(0, 0, width, height);
@@ -38,7 +42,7 @@ int Graphics::initializeWindow(int width, int height, const char* title) {
 }
 
 void Graphics::clearWindow() {
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT);
 	currentFPS = 1.0 / (glfwGetTime() - lastFrameTime);
 	lastFrameTime = glfwGetTime();
 }
