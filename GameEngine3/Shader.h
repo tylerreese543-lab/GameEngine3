@@ -25,7 +25,9 @@ public:
 };//aBus was here
 
 class ShaderProgram : public Resource {
-	public:
+private:
+	int U(std::string uniform);
+public:
 	//All the shaders that these programs will use will actually be the instance's children.
 	GLuint id;
 	BufferLayout layout; //Generated from the vertex shader's input layout
@@ -34,7 +36,12 @@ class ShaderProgram : public Resource {
 	int createProgram();
 	int useProgram();
 	//Uniform
-	void setUniform3f(std::string )
+	void setUniform1f(std::string uniform, float f0);
+	void setUniform2f(std::string uniform, float f0, float f1);
+	void setUniform3f(std::string uniform, float f0, float f1, float f2);
+	void setUniform4f(std::string uniform, float f0, float f1, float f2, float f3);
+
+	void setUniformSMat(std::string uniform, float* fv, bool transposed, int size);
 	~ShaderProgram();
 	ShaderProgram();
 };

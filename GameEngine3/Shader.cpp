@@ -156,3 +156,34 @@ int ShaderProgram::useProgram() {
 	glUseProgram(id);
 	return 0;
 }
+
+int ShaderProgram::U(std::string uniform) {
+	return glGetUniformLocation(id, name.c_str());
+}
+void ShaderProgram::setUniform1f(std::string uniform, float f0) {
+	glUniform1f(U(uniform), f0);
+}
+void ShaderProgram::setUniform2f(std::string uniform, float f0, float f1) {
+	glUniform2f(U(uniform), f0, f1);
+}
+void ShaderProgram::setUniform3f(std::string uniform, float f0, float f1, float f2) {
+	glUniform3f(U(uniform), f0, f1, f2);
+}
+void ShaderProgram::setUniform4f(std::string uniform, float f0, float f1, float f2, float f3) {
+	glUniform4f(U(uniform), f0, f1, f2, f3);
+}
+void ShaderProgram::setUniformSMat(std::string uniform, float* fv, bool transposed, int size) {
+	switch (size) {
+	case 4:
+		glUniformMatrix4fv(U(uniform), 1, transposed, fv);
+		break;
+	case 3:
+		glUniformMatrix3fv(U(uniform), 1, transposed, fv);
+		break;
+	case 2:
+		glUniformMatrix2fv(U(uniform), 1, transposed, fv);
+	default:
+		printf("Not a valid square matrix size.\n");
+		break;
+	}
+}

@@ -84,8 +84,4 @@
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="shader\fragment_shader.glsl" />
-    <None Include="shader\vertex_shader.glsl" />
-  </ItemGroup>
 </Project>
