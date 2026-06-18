@@ -158,7 +158,10 @@ int ShaderProgram::useProgram() {
 }
 
 int ShaderProgram::U(std::string uniform) {
-	return glGetUniformLocation(id, name.c_str());
+	if (glGetUniformLocation(id, uniform.c_str()) == -1) {
+		printf("Uniform '%s' does not exist.\n", uniform.c_str());
+	}
+	return glGetUniformLocation(id, uniform.c_str());
 }
 void ShaderProgram::setUniform1f(std::string uniform, float f0) {
 	glUniform1f(U(uniform), f0);
@@ -172,7 +175,16 @@ void ShaderProgram::setUniform3f(std::string uniform, float f0, float f1, float 
 void ShaderProgram::setUniform4f(std::string uniform, float f0, float f1, float f2, float f3) {
 	glUniform4f(U(uniform), f0, f1, f2, f3);
 }
-void ShaderProgram::setUniformSMat(std::string uniform, float* fv, bool transposed, int size) {
+void ShaderProgram::setUniform2f(std::string uniform, vec2 v) {
+	glUniform2f(U(uniform), v.X, v.Y);
+}
+void ShaderProgram::setUniform3f(std::string uniform, vec3 v) {
+	glUniform3f(U(uniform), v.X, v.Y, v.Z);
+}
+void ShaderProgram::setUniform4f(std::string uniform, vec4 v) {
+	glUniform4f(U(uniform), v.X, v.Y, v.Z, v.W);
+}
+void ShaderProgram::setUniformSMat(std::string uniform, const float* fv, bool transposed, int size) {
 	switch (size) {
 	case 4:
 		glUniformMatrix4fv(U(uniform), 1, transposed, fv);

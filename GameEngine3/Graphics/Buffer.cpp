@@ -6,6 +6,7 @@ Buffer::Buffer(GLenum target, GLsizeiptr size, GLenum usage) {
 	this->usage = usage;
 	id = 0;
 	data = nullptr;
+	element_size = 0;
 }
 Buffer::Buffer() {
 	target = GL_ARRAY_BUFFER;
@@ -13,13 +14,16 @@ Buffer::Buffer() {
 	usage = GL_STATIC_DRAW;
 	id = 0;
 	data = nullptr;
+	element_size = 0;
 }
 Buffer::~Buffer() {
 	glDeleteBuffers(1, &id);
 }
 
 int Buffer::generate() {
-	glGenBuffers(1, &id);
+	if (id == 0) {
+		glGenBuffers(1, &id);
+	}
 	bind();
 	update();
 	return 0;
@@ -45,4 +49,8 @@ int Buffer::setData(GLsizeiptr size, GLenum usage) {
 int Buffer::update() {
 	glBufferData(target, size, data, usage);
 	return 0;
+}
+
+void Buffer::calcSize(int count) {
+	size = count * element_size;
 }

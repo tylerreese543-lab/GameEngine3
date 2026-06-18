@@ -4,6 +4,7 @@
 
 #include "Graphics/Graphics.h"
 #include "Graphics/BufferLayout.h"
+#include "Graphics/matrix.h"
 #include "Resource.h"
 
 class ShaderResource : public Resource {
@@ -38,10 +39,12 @@ public:
 	//Uniform
 	void setUniform1f(std::string uniform, float f0);
 	void setUniform2f(std::string uniform, float f0, float f1);
+	void setUniform2f(std::string uniform, vec2 v);
 	void setUniform3f(std::string uniform, float f0, float f1, float f2);
+	void setUniform3f(std::string uniform, vec3 v);
 	void setUniform4f(std::string uniform, float f0, float f1, float f2, float f3);
-
-	void setUniformSMat(std::string uniform, float* fv, bool transposed, int size);
+	void setUniform4f(std::string uniform, vec4 v);
+	void setUniformSMat(std::string uniform, const float* fv, bool transposed, int size);
 	~ShaderProgram();
 	ShaderProgram();
 };

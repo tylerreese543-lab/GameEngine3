@@ -23,3 +23,20 @@ int getSizeOfType(GLenum type) {
 		return 0;
 	}
 }
+
+void setMat4Row(float* array, float f0, float f1, float f2, float f3) {
+	array[0] = f0;
+	array[1] = f1;
+	array[2] = f2;
+	array[3] = f3;
+}
+
+void setMat3Row(float* array, float f0, float f1, float f2) {
+	array[0] = f0;
+	array[1] = f1;
+	array[2] = f2;
+}
+
+void multMat4(float* arrS, float* arr0, float* arr1) {
+
+}

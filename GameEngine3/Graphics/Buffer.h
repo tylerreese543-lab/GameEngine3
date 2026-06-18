@@ -17,4 +17,6 @@ class Buffer {
 	virtual int unbind();
 	virtual int setData(GLsizeiptr size, GLenum usage);
 	virtual int update();
+	//Calculates 'size' based off of 'element_size' and the count as an argument
+	virtual void calcSize(int count);
 };

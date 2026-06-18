@@ -129,12 +129,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Camera.h" />
     <ClInclude Include="GameInstance.h" />
     <ClInclude Include="Graphics\Buffer.h" />
     <ClInclude Include="Graphics\BufferLayout.h" />
     <ClInclude Include="Graphics\Graphics.h" />
     <ClInclude Include="Graphics\GraphicsWrapper.h" />
     <ClInclude Include="Graphics\graphics_include.h" />
+    <ClInclude Include="Graphics\matrix.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="Graphics\VertexArrayObject.h" />
     <ClInclude Include="Mesh.h" />
@@ -142,12 +144,14 @@
     <ClInclude Include="Resource.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Camera.cpp" />
     <ClCompile Include="GameEngine3.cpp" />
     <ClCompile Include="GameInstance.cpp" />
     <ClCompile Include="Graphics\Buffer.cpp" />
     <ClCompile Include="Graphics\BufferLayout.cpp" />
     <ClCompile Include="Graphics\Graphics.cpp" />
     <ClCompile Include="Graphics\GraphicsWrapper.cpp" />
+    <ClCompile Include="Graphics\matrix.cpp" />
     <ClCompile Include="Graphics\VertexArrayObject.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="RenderObject.cpp" />

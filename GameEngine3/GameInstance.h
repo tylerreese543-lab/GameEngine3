@@ -11,6 +11,7 @@ public:
 		InstanceType_Resource,
 		InstanceType_ShaderResource,
 		InstanceType_ShaderProgram,
+		InstanceType_Camera,
 		InstanceType_Count
 	};
 	static const std::string instanceTypeNames[InstanceType_Count];

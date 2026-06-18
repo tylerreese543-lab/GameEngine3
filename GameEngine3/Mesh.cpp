@@ -18,6 +18,8 @@ Instance* Mesh::clone() {
 }
 
 int Mesh::generateVAO(BufferLayout* layout) {
+	ebo.generate();
+	vbo.generate();
 	return GenVAO(&vao, &vbo, &ebo, layout);
 }
 

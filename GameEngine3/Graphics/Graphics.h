@@ -9,6 +9,8 @@ public:
 
 	int viewportWidth;
 	int viewportHeight;
+	int windowWidth;
+	int windowHeight;
 	//If true, the viewport will automatically match the size of the window. If false, the viewport will use the specified width and height.
 	bool matchViewportToWindow;
 	bool vsyncEnabled;
@@ -26,4 +28,5 @@ public:
 	Graphics();
 	~Graphics();
 	static Graphics* getInstance();
+	float getAspectRatio();
 };
