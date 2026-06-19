@@ -21,12 +21,16 @@ int main() {
 	camera.setPlanes(0.1f, 1000.0f);
 	camera.fov = 90.0f;
 
-	mesh.vbo.data = new float[9]{
-		0.0f, 0.5f, 0.0f,
-		-0.5f, -0.5f, 0.0f,
-		0.5f, -0.5f, 0.0f
+	mesh.vbo.data = new float[18]{
+
+		0.0f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f,
+
+		-0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 
+
+		0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f,
 	};
-	mesh.vbo.size = 9 * sizeof(float);
+
+	mesh.vbo.size = 18 * sizeof(float);
 	mesh.ebo.data = new unsigned int[3]{
 		0, 1, 2
 	};

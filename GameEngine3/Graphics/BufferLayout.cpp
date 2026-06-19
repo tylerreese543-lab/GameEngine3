@@ -51,12 +51,15 @@ void BufferLayout::apply() {
 	GLuint offset = 0;
 	GLuint index = 0;
 	for (BufferLayoutElement element : elements) {
+		//printf("Ind: %d, off: %d\n",index, offset);
 		glEnableVertexAttribArray(index);
-		glVertexAttribPointer(offset, element.count, element.type, element.normalized, getStride(), (const void*)(uintptr_t)offset);
+		glVertexAttribPointer(index, element.count, element.type, element.normalized, getStride(), (const void*)(uintptr_t)offset);
 		offset += element.count * getSizeOfType(element.type);
 		++index;
+
 	}
-	printf("Ac: %d\n", getStride());
+
+	printf("Str: %d, size: %d\n", getStride(), (int)elements.size());
 }
 
 void BufferLayout::remove() {
