@@ -10,6 +10,7 @@ public:
 		InstanceType_Mesh,
 		InstanceType_Resource,
 		InstanceType_ShaderResource,
+		InstanceType_ImageResource,
 		InstanceType_ShaderProgram,
 		InstanceType_Camera,
 		InstanceType_Count

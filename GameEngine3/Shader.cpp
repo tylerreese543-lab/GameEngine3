@@ -199,3 +199,10 @@ void ShaderProgram::setUniformSMat(std::string uniform, const float* fv, bool tr
 		break;
 	}
 }
+
+void ShaderProgram::bindTexture(std::string uniform, ImageResource* tex) {
+	int textureSlot = -1;
+	if (U(uniform) == -1) return;
+	glGetUniformiv(id, U(uniform), &textureSlot);
+	tex->BindSlot(textureSlot);
+}

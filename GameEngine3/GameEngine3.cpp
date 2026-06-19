@@ -2,6 +2,7 @@
 #include "Mesh.h"
 #include "Camera.h"
 #include "Shader.h"
+#include "TextureResource.h"
 int main() {
 
 	Graphics* graphics = Graphics::getInstance();
@@ -11,6 +12,9 @@ int main() {
 	ShaderResource fshader(GL_FRAGMENT_SHADER);
 	vshader.loadFromFile("shader/vertex_shader.glsl");
 	fshader.loadFromFile("shader/fragment_shader.glsl");
+	
+	ImageResource texture0;
+	texture0.loadFromFile("shader/poinsettia.png", GL_RGB);
 	ShaderProgram sprog;
 	sprog.addChild(&vshader);
 	sprog.addChild(&fshader);
@@ -46,6 +50,7 @@ int main() {
 		sprog.setUniform3f("camera_position", camera.position);
 		sprog.setUniformSMat("look", camera.look, GL_TRUE, 3);
 		sprog.setUniformSMat("projection", camera.projection, GL_TRUE, 4);
+		sprog.bindTexture("tex", &texture0);
 		mesh.render();
 		graphics->windowUpdate();
 	}

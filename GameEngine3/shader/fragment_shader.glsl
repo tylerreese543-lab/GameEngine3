@@ -3,6 +3,7 @@
 in vec3 out_aColor;
 out vec4 color;
 
+uniform sampler2D tex;
 void main() {
-	color = vec4(out_aColor, 1.0);
+	color = texture(tex, out_aColor.xy);
 }

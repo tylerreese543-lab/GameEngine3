@@ -1,15 +1,30 @@
 #pragma once
 #include "Resource.h"
-
-class TextureResource : public Resource {
-public:
-	char* Data;
-	int Channels;
-	std::string filePath;
+#include "Graphics/graphics_include.h"
+#define STB_IMAGE_IMPLEMENTATION
+class ImageResource : public Resource {
+private:
 	int width;
 	int height;
+	unsigned char* Data;
+	int imageSizeRaw;
+	int Channels;
+	unsigned int GLTextureID;
+	unsigned int GLTextureSlot;
+	GLenum typeLoadFile;
+	GLenum GLTextureParameters[4];
+public:
+	std::string filePath;
 
-	void loadFromFile(std::string filepath);
 
-	TextureResource();
+	void loadFromFile(std::string filepath, GLenum fileType);
+	void SetGLLoadParams(GLenum WRAP_U, GLenum WRAP_V, GLenum MIN_FILTER, GLenum MAG_FILTER);
+	void BindSlot(int slot);
+	ImageResource();
+
+	int getWidth();
+	int getHeight();
+	char* getImageData();
+	int getImageBufferLength();
+	int getNumChannels();
 };

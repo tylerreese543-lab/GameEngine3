@@ -5,6 +5,7 @@
 #include "Graphics/Graphics.h"
 #include "Graphics/BufferLayout.h"
 #include "Graphics/matrix.h"
+#include "TextureResource.h"
 #include "Resource.h"
 
 class ShaderResource : public Resource {
@@ -37,6 +38,7 @@ public:
 	int createProgram();
 	int useProgram();
 	//Uniform
+	void bindTexture(std::string uniform, ImageResource* tex);
 	void setUniform1f(std::string uniform, float f0);
 	void setUniform2f(std::string uniform, float f0, float f1);
 	void setUniform2f(std::string uniform, vec2 v);
