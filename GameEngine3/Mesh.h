@@ -4,6 +4,7 @@
 #include "Graphics/matrix.h"
 #include "Shader.h"
 #include "Camera.h"
+#include "Material.h"
 class Geometry : public RenderObject {
 private:
 	void _blankInitVBO();
@@ -19,6 +20,7 @@ public:
 	virtual Instance* clone();
 	virtual void render();
 	virtual void setVBOFlags(bool hasPositions, bool hasUV, bool hasNormal, bool hasColor, bool hasExtra = false);
+	virtual void autoSearchVBO();
 };
 
 class Mesh : public Instance {
@@ -31,7 +33,7 @@ public:
 	vec3 scale;
 	Geometry* geometry;
 	mat4 transform;
-	virtual void render(ShaderProgram* program, Camera* camera);
+	virtual void render(ShaderProgram* program, Camera* camera, Material* material);
 
 
 	Mesh();

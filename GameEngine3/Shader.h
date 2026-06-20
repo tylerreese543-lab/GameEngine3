@@ -32,6 +32,7 @@ private:
 public:
 	std::string shaderAttributeNames[eVAttribute_MAX];
 	std::string shaderUniformNames[eSUniform_MAX];
+	std::string shaderTextureNames[eMaterialTexture_MAX];
 	bool loadInterleaved;
 	//All the shaders that these programs will use will actually be the instance's children.
 	GLuint id;
@@ -43,6 +44,7 @@ public:
 
 	void setDefaultVertexAttribute(int index, std::string name);
 	void setDefaultShaderUniform(int index, std::string name);
+	void setDefaultMaterialTexture(int index, std::string name);
 	//Uniform
 	void bindTexture(std::string uniform, ImageResource* tex);
 	void setUniform1f(std::string uniform, float f0);

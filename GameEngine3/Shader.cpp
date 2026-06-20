@@ -72,15 +72,22 @@ ShaderProgram::ShaderProgram() : Resource() {
 	id = 0;
 	loadInterleaved = false;
 	
-	setDefaultVertexAttribute(eVAttribute_Position, "m_Position");
-	setDefaultVertexAttribute(eVAttribute_UV, "m_TexCoord");
-	setDefaultVertexAttribute(eVAttribute_Normal, "m_Normal");
-	setDefaultVertexAttribute(eVAttribute_Color, "m_Color");
+	setDefaultVertexAttribute(eVAttribute_Position,					"m_Position");
+	setDefaultVertexAttribute(eVAttribute_UV,						"m_TexCoord");
+	setDefaultVertexAttribute(eVAttribute_Normal,					"m_Normal");
+	setDefaultVertexAttribute(eVAttribute_Color,					"m_Color");
 
-	setDefaultShaderUniform(eSUniform_CameraLookMatrix, "c_LookMatrix");
-	setDefaultShaderUniform(eSUniform_CameraPosition, "c_Position");
-	setDefaultShaderUniform(eSUniform_ModelTransformMatrix, "m_Transform");
-	setDefaultShaderUniform(eSUniform_CameraProjectionMatrix, "c_ProjectionMatrix");
+	setDefaultShaderUniform(eSUniform_CameraLookMatrix,				"c_LookMatrix");
+	setDefaultShaderUniform(eSUniform_CameraPosition,				"c_Position");
+	setDefaultShaderUniform(eSUniform_ModelTransformMatrix,			"m_Transform");
+	setDefaultShaderUniform(eSUniform_CameraProjectionMatrix,		"c_ProjectionMatrix");
+	setDefaultShaderUniform(eSUniform_Material_DiffuseColor,		"m_DiffuseColor");
+	setDefaultShaderUniform(eSUniform_Material_Specularity,			"m_Specularity");
+
+	setDefaultMaterialTexture(eMaterialTexture_Diffuse,				"t_Diffuse");
+	setDefaultMaterialTexture(eMaterialTexture_AmbientOcclusion,	"t_AmbientOcclusion");
+	setDefaultMaterialTexture(eMaterialTexture_Normal,				"t_Normal");
+	setDefaultMaterialTexture(eMaterialTexture_Specular,			"t_Specular");
 }
 ShaderProgram::~ShaderProgram() {
 	glDeleteProgram(id);
@@ -202,7 +209,8 @@ int ShaderProgram::useProgram() {
 
 int ShaderProgram::U(std::string uniform) {
 	if (glGetUniformLocation(id, uniform.c_str()) == -1) {
-		printf("Uniform '%s' does not exist.\n", uniform.c_str());
+		//Removed - developer allowed to intentionally exclude uniforms from shaders
+		//printf("Uniform '%s' does not exist, or is not used in the shader program.\n", uniform.c_str());
 	}
 	return glGetUniformLocation(id, uniform.c_str());
 }
@@ -257,7 +265,13 @@ void ShaderProgram::setDefaultVertexAttribute(int index, std::string name) {
 }
 
 void ShaderProgram::setDefaultShaderUniform(int index, std::string name) {
-	if (index >= 0 && index < eVAttribute_MAX) {
+	if (index >= 0 && index < eSUniform_MAX) {
 		shaderUniformNames[index] = name;
+	}
+}
+
+void ShaderProgram::setDefaultMaterialTexture(int index, std::string name) {
+	if (index >= 0 && index < eMaterialTexture_MAX) {
+		shaderTextureNames[index] = name;
 	}
 }

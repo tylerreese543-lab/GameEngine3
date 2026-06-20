@@ -20,6 +20,7 @@ Instance* Geometry::clone() {
 }
 
 int Geometry::generateVAO(BufferLayout* layout) {
+	autoSearchVBO(); //AutoSearchVBO SHOULD be fine to auto-call because there would be no other way to initialize them...
 	ebo.generate();
 	for (int i = eVBO_Positions; i < eVBO_MAX; ++i) {
 		if (vboFlags[i]) {
@@ -74,7 +75,7 @@ void Mesh::calcTransform() {
 	transform = mat4::transform(position, scale, rotation);
 }
 
-void Mesh::render(ShaderProgram* program, Camera* camera) {
+void Mesh::render(ShaderProgram* program, Camera* camera, Material* material) {
 	if (geometry == nullptr) {
 		geometry = autoGeometry();
 	}
@@ -91,11 +92,16 @@ void Mesh::render(ShaderProgram* program, Camera* camera) {
 		printf("Abort rendering of '%s' - has no shader program attached.", name.c_str());
 		return;
 	}
-
+	if (material == nullptr) {
+		printf("Abort rendering of '%s' - has no material attached.", name.c_str());
+		return;
+	}
 	if (geometry->vao == 0) {
 		geometry->generateVAO(&program->layout);
 	}
 	calcTransform();
+	program->useProgram();
+	material->applyMaterial(program);
 	program->setUniformSMat(program->shaderUniformNames[eSUniform_ModelTransformMatrix], transform, GL_TRUE, 4);
 	program->setUniform3f(program->shaderUniformNames[eSUniform_CameraPosition], camera->position);
 	program->setUniformSMat(program->shaderUniformNames[eSUniform_CameraLookMatrix], camera->look, GL_TRUE, 3);
@@ -111,4 +117,10 @@ Geometry* Mesh::autoGeometry() {
 		}
 	}
 	return nullptr;
+}
+
+void Geometry::autoSearchVBO() {
+	for (int i = 0; i < eVBO_MAX; ++i) {
+		vboFlags[i] = (vbos[i].data != nullptr);
+	}
 }

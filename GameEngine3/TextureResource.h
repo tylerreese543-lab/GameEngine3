@@ -13,16 +13,18 @@ private:
 	unsigned int GLTextureSlot;
 	GLenum typeLoadFile;
 	GLenum GLTextureParameters[4];
-	int imageType;
+
 public:
+	bool loaded;
+	int textureType;
 	std::string filePath;
 
 
 	void loadFromFile(std::string filepath, GLenum fileType);
 	void SetGLLoadParams(GLenum WRAP_U, GLenum WRAP_V, GLenum MIN_FILTER, GLenum MAG_FILTER);
 	void BindSlot(int slot);
-	ImageResource();
-
+	ImageResource(int textureType = -1);
+	virtual ~ImageResource();
 	int getWidth();
 	int getHeight();
 	char* getImageData();

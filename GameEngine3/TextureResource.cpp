@@ -1,6 +1,6 @@
 #include "TextureResource.h"
 #include "stb_image/stb_image.h"
-ImageResource::ImageResource() {
+ImageResource::ImageResource(int textureType) {
 	width = 0;
 	height = 0;
 	Channels = 0;
@@ -10,9 +10,14 @@ ImageResource::ImageResource() {
 	GLTextureID = 0;
 	type = InstanceType_ImageResource;
 	SetGLLoadParams(GL_REPEAT, GL_REPEAT, GL_NEAREST, GL_NEAREST);
+	loaded = false;
+	//Do not use this for any textures
+	this->textureType = textureType;
 }
 
 void ImageResource::loadFromFile(std::string filepath, GLenum fileType) {
+	if (loaded == true) return;
+	loaded = true;
 	filePath = filepath;
 	typeLoadFile = fileType;
 
@@ -40,20 +45,24 @@ void ImageResource::loadFromFile(std::string filepath, GLenum fileType) {
 		break;
 	}
 	Data = stbi_load(filePath.c_str(), &width, &height, &Channels, channels);
+	
+	if (textureType > -1) {
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+		glTexImage2D(GL_TEXTURE_2D, 0, typeLoadFile, width, height, 0, typeLoadFile, GL_UNSIGNED_BYTE, Data);
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-	glTexImage2D(GL_TEXTURE_2D, 0, typeLoadFile, width, height, 0, typeLoadFile, GL_UNSIGNED_BYTE, Data);
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GLTextureParameters[0]);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GLTextureParameters[1]);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GLTextureParameters[2]);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GLTextureParameters[3]);
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GLTextureParameters[0]);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GLTextureParameters[1]);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GLTextureParameters[2]);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GLTextureParameters[3]);
+		glGenerateMipmap(GL_TEXTURE_2D);
 
-	glGenerateMipmap(GL_TEXTURE_2D);
-
-	if (Data) {
-		stbi_image_free(Data);
+		glBindTexture(GL_TEXTURE_2D, 0);
+		if (Data) {
+			stbi_image_free(Data);
+			Data = nullptr;
+		}
 	}
 }
 void ImageResource::SetGLLoadParams(GLenum WRAP_U, GLenum WRAP_V, GLenum MIN_FILTER, GLenum MAG_FILTER) {
@@ -67,4 +76,11 @@ void ImageResource::BindSlot(int s) {
 	GLTextureSlot = s;
 	glActiveTexture(GL_TEXTURE0 + GLTextureSlot);
 	glBindTexture(GL_TEXTURE_2D, GLTextureID);
+}
+
+ImageResource::~ImageResource() {
+	if (Data) {
+		stbi_image_free(Data);
+		Data = nullptr;
+	}
 }
