@@ -139,12 +139,20 @@ mat4 mat4::zxy(float rad_x, float rad_y, float rad_z) {
 	return  yrot(rad_y) * xrot(rad_x) * zrot(rad_z);
 }
 mat4 mat4::transform(vec3 trans, vec3 scale, vec3 rot) {
-	return  mat4::yxz(rot.X, rot.Y, rot.Z) * mat4(
-		scale.X, 0.0f, 0.0f, trans.X,
-		0.0f, scale.Y, 0.0f, trans.Y,
-		0.0f, 0.0f, scale.Z, trans.Z,
+	mat4 translate(
+		1.0f, 0.0f, 0.0f, trans.X,
+		0.0f, 1.0f, 0.0f, trans.Y,
+		0.0f, 0.0f, 1.0f, trans.Z,
 		0.0f, 0.0f, 0.0f, 1.0f
 	);
+	mat4 scl(
+		scale.X, 0.0f, 0.0f, 0.0f,
+		0.0f, scale.Y, 0.0f, 0.0f,
+		0.0f, 0.0f, scale.Z, 0.0f,
+		0.0f, 0.0f, 0.0f, 1.0f
+	);
+
+	return translate * scl * mat4::yxz(rot.X, rot.Y, rot.Z);
 }
 
 col3::col3()

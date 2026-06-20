@@ -6,52 +6,73 @@
 int main() {
 
 	Graphics* graphics = Graphics::getInstance();
+
 	graphics->initializeWindow(800, 600, "Game Engine 3");
 	graphics->matchViewportToWindow = true;
+
+	//SHADERS - load from file, parent to shader program and create;
 	ShaderResource vshader(GL_VERTEX_SHADER);
 	ShaderResource fshader(GL_FRAGMENT_SHADER);
 	vshader.loadFromFile("shader/vertex_shader.glsl");
 	fshader.loadFromFile("shader/fragment_shader.glsl");
-	
-	ImageResource texture0;
-	texture0.loadFromFile("shader/poinsettia.png", GL_RGB);
 	ShaderProgram sprog;
 	sprog.addChild(&vshader);
 	sprog.addChild(&fshader);
+	//TRICK: by setting color and UV to "" we force use the miscellaneous VBO
+	sprog.setDefaultVertexAttribute(eVAttribute_Color, "");
+	sprog.setDefaultVertexAttribute(eVAttribute_UV, "");
 	sprog.createProgram();
-	Mesh mesh;
+
+	//IMAGES - load from file;
+	ImageResource texture0;
+	texture0.loadFromFile("shader/poinsettia.png", GL_RGB);
+
+
+	//GEOMETRY - define which VBOs we want to use, fill them with data and generate the VAO;
+	Geometry mesh;
+
+	Mesh model;
+
+	model.addChild(&mesh);
+	mesh.setVBOFlags(true, false, false, false, true);
+	mesh.vbos[eVBO_Positions].data = new float[12] {
+		-1.0, -1.0, 0.0,
+		1.0, -1.0, 0.0,
+		1.0, 1.0, 0.0,
+		-1.0, 1.0, 0.0,
+	};
+	mesh.vbos[eVBO_Extra].data = new float[20] {
+		1.0, 0.0, 0.0, 0.0, 0.0,
+		0.0, 1.0, 0.0, 1.0, 0.0,
+		1.0, 1.0, 1.0, 1.0, 1.0,
+		0.0, 0.0, 1.0, 0.0, 1.0,
+	};
+	mesh.vbos[eVBO_Positions].calcSize(12);
+	mesh.vbos[eVBO_Extra].calcSize(20);
+
+	mesh.ebo.data = new unsigned int[6]{
+		0, 1, 2,
+		0, 2, 3,
+	};
+	mesh.ebo.calcSize(6);
+	mesh.generateVAO(&sprog.layout);
+
+	//CAMERA - define camera position, planes, and FOV
 
 	Camera camera(0, 0, -2);
 	camera.setPlanes(0.1f, 1000.0f);
-	camera.fov = 90.0f;
+	camera.fov = 70.0f;
 
-	mesh.vbo.data = new float[18]{
+	//LOOP
 
-		0.0f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f,
-
-		-0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 
-
-		0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f,
-	};
-
-	mesh.vbo.size = 18 * sizeof(float);
-	mesh.ebo.data = new unsigned int[3]{
-		0, 1, 2
-	};
-	mesh.ebo.size = 3 * sizeof(unsigned int);
-
-	mesh.generateVAO(&sprog.layout);
 	while (graphics->shouldOpenWindow()) {
 		graphics->clearWindow();
 		camera.updateMatrices();
 		sprog.useProgram();
 		camera.aspect_ratio = graphics->getAspectRatio();
-		camera.rotation = vec3(0, 0.4 * sinf(glfwGetTime() * 2), 0);
-		sprog.setUniform3f("camera_position", camera.position);
-		sprog.setUniformSMat("look", camera.look, GL_TRUE, 3);
-		sprog.setUniformSMat("projection", camera.projection, GL_TRUE, 4);
 		sprog.bindTexture("tex", &texture0);
-		mesh.render();
+		model.rotation = vec3(0, 0.4 * glfwGetTime() * 2, 0);
+		model.render(&sprog, &camera);
 		graphics->windowUpdate();
 	}
 	glfwTerminate();

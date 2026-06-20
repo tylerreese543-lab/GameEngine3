@@ -1,7 +1,6 @@
 #include "Shader.h"
 
 
-
 ShaderResource::ShaderResource() : Resource() {
 	name = "Shader";
 	type = InstanceType_ShaderResource;
@@ -9,6 +8,8 @@ ShaderResource::ShaderResource() : Resource() {
 	compiled = false;
 	compileResult = 0;
 	source = nullptr;
+	shaderType = GL_VERTEX_SHADER;
+
 }
 
 ShaderResource::ShaderResource(GLenum type) : ShaderResource() {
@@ -69,6 +70,17 @@ ShaderProgram::ShaderProgram() : Resource() {
 	name = "ShaderProgram";
 	type = InstanceType_ShaderProgram;
 	id = 0;
+	loadInterleaved = false;
+	
+	setDefaultVertexAttribute(eVAttribute_Position, "m_Position");
+	setDefaultVertexAttribute(eVAttribute_UV, "m_TexCoord");
+	setDefaultVertexAttribute(eVAttribute_Normal, "m_Normal");
+	setDefaultVertexAttribute(eVAttribute_Color, "m_Color");
+
+	setDefaultShaderUniform(eSUniform_CameraLookMatrix, "c_LookMatrix");
+	setDefaultShaderUniform(eSUniform_CameraPosition, "c_Position");
+	setDefaultShaderUniform(eSUniform_ModelTransformMatrix, "m_Transform");
+	setDefaultShaderUniform(eSUniform_CameraProjectionMatrix, "c_ProjectionMatrix");
 }
 ShaderProgram::~ShaderProgram() {
 	glDeleteProgram(id);
@@ -145,8 +157,39 @@ int ShaderProgram::createProgram() {
 			type = GL_FLOAT;
 			count = 3;
 		}
-
-		layout.elements[location] = BufferLayoutElement(type, count);
+		if (type == GL_FLOAT_VEC2) {
+			type = GL_FLOAT;
+			count = 2;
+		}
+		if (location >= 0) {
+			layout.elements[location] = BufferLayoutElement(type, count);
+			if (loadInterleaved) {
+				layout.elements[location].binding = eVBO_Positions;
+			}
+			else {
+				//Set bindings to hard-coded indexes in the Mesh's VBO;
+				if (strcmp(nameBuffer, shaderAttributeNames[eVAttribute_Position].c_str()) == 0) {
+					layout.elements[location].binding = eVBO_Positions;
+				}
+				else if (strcmp(nameBuffer, shaderAttributeNames[eVAttribute_UV].c_str()) == 0) {
+					layout.elements[location].binding = eVBO_UV;
+				}
+				else if (strcmp(nameBuffer, shaderAttributeNames[eVAttribute_Normal].c_str()) == 0) {
+					layout.elements[location].binding = eVBO_Normal;
+				}
+				else if (strcmp(nameBuffer,  shaderAttributeNames[eVAttribute_Color].c_str()) == 0) {
+					layout.elements[location].binding = eVBO_Color;
+				}
+				else {
+					layout.elements[location].binding = eVBO_Extra;
+				}
+			}
+			//printf("Element '%s' bound to VBO %d at location %d.\n", nameBuffer, layout.elements[location].binding, location);
+		}
+	
+		else {
+			printf("WARNING: attribute '%s' has a binding of %d.\n", nameBuffer, location);
+		}
 	}
 	delete[] nameBuffer;
 	return 0;
@@ -205,4 +248,16 @@ void ShaderProgram::bindTexture(std::string uniform, ImageResource* tex) {
 	if (U(uniform) == -1) return;
 	glGetUniformiv(id, U(uniform), &textureSlot);
 	tex->BindSlot(textureSlot);
+}
+
+void ShaderProgram::setDefaultVertexAttribute(int index, std::string name) {
+	if (index >= 0 && index < eVAttribute_MAX) {
+		shaderAttributeNames[index] = name;
+	}
+}
+
+void ShaderProgram::setDefaultShaderUniform(int index, std::string name) {
+	if (index >= 0 && index < eVAttribute_MAX) {
+		shaderUniformNames[index] = name;
+	}
 }

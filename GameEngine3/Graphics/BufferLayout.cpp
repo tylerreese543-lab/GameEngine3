@@ -20,10 +20,12 @@ BufferLayoutElement::BufferLayoutElement(GLenum type, GLuint count, GLboolean no
 	this->count = count;
 	this->normalized = normalized;
 }
-GLuint BufferLayout::getStride() {
+GLuint BufferLayout::getStride(int binding) {
 	GLuint stride = 0;
 	for (BufferLayoutElement element : elements) {
-		stride += element.count * getSizeOfType(element.type);
+		if (binding == -1 || element.binding == binding) {
+			stride += element.count * getSizeOfType(element.type);
+		}
 	}
 	return stride;
 }
@@ -66,4 +68,34 @@ void BufferLayout::remove() {
 	for (GLuint i = 0; i < elements.size(); i++) {
 		glDisableVertexAttribArray(i);
 	}
+}
+
+void BufferLayout::applyEX(Buffer* vbos, int numVBO) {
+	GLuint index = 0;
+	GLuint* offsets = new GLuint[numVBO]{};
+	GLuint stride = 0; //Tightly pack individual data
+	if (numVBO == 1) {
+		stride = getStride(); //If there is one vbo (interleaved) then use full stride
+	}
+	for (BufferLayoutElement element : elements) {
+		if (vbos[element.binding].id != 0) {
+			vbos[element.binding].bind();
+		}
+
+		stride = 0; //Tightly pack individual data for fully separated objects
+		if (numVBO == 1) {
+			stride = getStride(); //If there is one vbo (interleaved) then use full stride
+		} else if (element.binding == eVBO_Extra) {
+			stride = getStride(eVBO_Extra); //If we are using the miscellaneous VBO which is always packed 
+		}
+		glEnableVertexAttribArray(index);
+		glVertexAttribPointer(index, element.count, element.type, element.normalized, stride, (const void*)(uintptr_t)offsets[element.binding]);
+		offsets[element.binding] += element.count * getSizeOfType(element.type);
+		++index;
+
+		vbos[element.binding].unbind();
+
+	}
+
+	printf("Str: %d, size: %d\n", getStride(), (int)elements.size());
 }

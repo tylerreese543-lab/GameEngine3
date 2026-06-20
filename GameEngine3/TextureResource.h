@@ -13,6 +13,7 @@ private:
 	unsigned int GLTextureSlot;
 	GLenum typeLoadFile;
 	GLenum GLTextureParameters[4];
+	int imageType;
 public:
 	std::string filePath;
 

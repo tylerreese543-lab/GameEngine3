@@ -7,12 +7,13 @@ public:
 		InstanceType_Undefined = 0,
 		InstanceType_Base,
 		InstanceType_RenderObject,
-		InstanceType_Mesh,
+		InstanceType_Geometry,
 		InstanceType_Resource,
 		InstanceType_ShaderResource,
 		InstanceType_ImageResource,
 		InstanceType_ShaderProgram,
 		InstanceType_Camera,
+		InstanceType_Mesh,
 		InstanceType_Count
 	};
 	static const std::string instanceTypeNames[InstanceType_Count];

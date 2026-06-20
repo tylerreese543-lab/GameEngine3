@@ -3,9 +3,11 @@
 #include "graphics_include.h"
 #include "GraphicsWrapper.h"
 #include <vector>
+#include "Buffer.h"
 
 class BufferLayoutElement {
 public:
+	GLuint binding;
 	GLenum type;
 	GLuint count;
 	GLboolean normalized;
@@ -18,7 +20,7 @@ public:
 class BufferLayout {
 public:
 	std::vector<BufferLayoutElement> elements;
-	GLuint getStride();
+	GLuint getStride(int binding = -1);
 	BufferLayout() {}
 	BufferLayout(std::initializer_list<BufferLayoutElement> elements);
 
@@ -29,5 +31,7 @@ public:
 	void clear();
 	
 	void apply();
+	//Apply Extended - gives more control and allows multiple VBOs to be added into different attributes separately
+	void applyEX(Buffer* vbos, int numVBO = 1);
 	void remove();
 };

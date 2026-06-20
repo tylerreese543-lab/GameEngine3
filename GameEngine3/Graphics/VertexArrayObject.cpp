@@ -1,9 +1,8 @@
 #include "VertexArrayObject.h"
-int GenVAO(GLuint* vao, Buffer* vbo, Buffer* ebo, BufferLayout* layout) {
+int GenVAO(GLuint* vao, Buffer* vbo, Buffer* ebo, BufferLayout* layout, int numVBO) {
 	glGenVertexArrays(1, vao);
 	glBindVertexArray(*vao);
-	vbo->bind();
-	layout->apply();
+	layout->applyEX(vbo, numVBO);
 	if (ebo) {
 		ebo->bind(); //Not all VAOs will have an EBO; if so use drawArrays instead of drawElements
 	}
@@ -14,7 +13,6 @@ int GenVAO(GLuint* vao, Buffer* vbo, Buffer* ebo, BufferLayout* layout) {
 	}
 	return 0;
 }
-
 int DrawVAOElements(GLuint vao, GLenum type, GLint count) {
 	glBindVertexArray(vao);
 	glDrawElements(GL_TRIANGLES, count, type, nullptr);

@@ -5,9 +5,9 @@
 #include "Graphics/Graphics.h"
 #include "Graphics/BufferLayout.h"
 #include "Graphics/matrix.h"
+#include "Graphics/GraphicsWrapper.h"
 #include "TextureResource.h"
 #include "Resource.h"
-
 class ShaderResource : public Resource {
 public:
 	GLuint id;
@@ -30,6 +30,9 @@ class ShaderProgram : public Resource {
 private:
 	int U(std::string uniform);
 public:
+	std::string shaderAttributeNames[eVAttribute_MAX];
+	std::string shaderUniformNames[eSUniform_MAX];
+	bool loadInterleaved;
 	//All the shaders that these programs will use will actually be the instance's children.
 	GLuint id;
 	BufferLayout layout; //Generated from the vertex shader's input layout
@@ -37,6 +40,9 @@ public:
 	int linkProgram();
 	int createProgram();
 	int useProgram();
+
+	void setDefaultVertexAttribute(int index, std::string name);
+	void setDefaultShaderUniform(int index, std::string name);
 	//Uniform
 	void bindTexture(std::string uniform, ImageResource* tex);
 	void setUniform1f(std::string uniform, float f0);
