@@ -102,13 +102,14 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>GLEW_STATIC;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)dependencies</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\VSProj\GameEngine3\dependencies\ASSIMPlib\include;$(SolutionDir)dependencies</AdditionalIncludeDirectories>
+      <ShowIncludes>false</ShowIncludes>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)dependencies\GLFW_3.4\lib-vc2022;$(SolutionDir)dependencies\GLEW_2.1\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opengl32.lib;glew32s.lib;glfw3.lib;gdi32.lib;user32.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)dependencies\GLFW_3.4\lib-vc2022;$(SolutionDir)dependencies\GLEW_2.1\lib;$(SolutionDir)dependencies\ASSIMPlib\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>assimp32.lib;opengl32.lib;glew32s.lib;glfw3.lib;gdi32.lib;user32.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -119,13 +120,14 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>GLEW_STATIC;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)dependencies</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\VSProj\GameEngine3\dependencies\ASSIMPlib\include;$(SolutionDir)dependencies</AdditionalIncludeDirectories>
+      <ShowIncludes>false</ShowIncludes>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)dependencies\GLFW_3.4\lib-vc2022;$(SolutionDir)dependencies\GLEW_2.1\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opengl32.lib;glew32s.lib;glfw3.lib;gdi32.lib;user32.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)dependencies\GLFW_3.4\lib-vc2022;$(SolutionDir)dependencies\GLEW_2.1\lib;$(SolutionDir)dependencies\ASSIMPlib\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>assimp32.lib;opengl32.lib;glew32s.lib;glfw3.lib;gdi32.lib;user32.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -138,6 +140,7 @@
     <ClInclude Include="Graphics\graphics_include.h" />
     <ClInclude Include="Graphics\matrix.h" />
     <ClInclude Include="Material.h" />
+    <ClInclude Include="ScriptBase.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="Graphics\VertexArrayObject.h" />
     <ClInclude Include="Mesh.h" />
