@@ -1,5 +1,7 @@
 #include "GameInstance.h"
 
+int Instance::currentinstanceID = 0;
+std::unordered_map<int, Instance*> Instance::world;
 const std::string Instance::instanceTypeNames[Instance::InstanceType_Count] = {
 	"Undefined",
 	"Base",
@@ -15,6 +17,9 @@ Instance::Instance() {
 	name = "Instance";
 	parent = nullptr;
 	type = InstanceType_Undefined;
+
+	registered = false;
+	registerInstance(this);
 }
 
 Instance::~Instance() {}
@@ -27,6 +32,9 @@ int Instance::destroy() {
 	for (Instance* child : children) {
 		child->destroy();
 	}
+	
+	world[instanceId] = nullptr;
+	instanceId = -1;
 	delete this;
 	return 0;
 }
@@ -123,4 +131,27 @@ int Instance::load(void* data) {
 
 void* offset(void* ptr, size_t offset) {
 	return (void*)((char*)ptr + offset);
+}
+
+void Instance::registerInstance(Instance* inst) {
+	if (inst->registered == false) {
+		inst->registered = true;
+		inst->instanceId = ++currentinstanceID;
+		world[currentinstanceID] = inst;
+	}
+}
+bool Instance::isIdValid(int ID) {
+	return world.count(ID) > 0;
+}
+bool Instance::isRegistered(Instance* inst) {
+	return (world[inst->getId()] == inst) && (inst->registered == true) && isIdValid(inst->getId());
+}
+
+Instance* Instance::getInstanceById(int ID) {
+	if (!isIdValid(ID)) return nullptr;
+	return world[ID];
+}
+
+int Instance::getId() {
+	return instanceId;
 }

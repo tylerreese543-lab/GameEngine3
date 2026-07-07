@@ -1,7 +1,8 @@
 #include "TextureResource.h"
 #include "stb_image/stb_image.h"
 #include "Graphics/GraphicsWrapper.h"
-ImageResource::ImageResource(int textureType, std::string filepath) {
+ImageResource::ImageResource(int textureType, std::string filepath) : Resource() {
+	name = "Texture";
 	width = 0;
 	height = 0;
 	Channels = 0;

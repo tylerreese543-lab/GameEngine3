@@ -1,6 +1,6 @@
 #include "Resource.h"
 
-Resource::Resource() {
+Resource::Resource() : Instance() {
 	name = "Resource";
 	type = InstanceType_Resource;
 }

@@ -8,8 +8,8 @@ public:
 
 	static void registerInstance(Instance* instance);
 	static bool isRegistered(Instance* instance);
-	static bool isIDValid(int ID);
-	static Instance* getInstanceByID(int ID);
+	static bool isIdValid(int ID);
+	static Instance* getInstanceById(int ID);
 	static std::unordered_map<int, Instance*> world;
 	enum {
 		InstanceType_Undefined = 0,
@@ -35,7 +35,7 @@ public:
 	std::string name;
 	Instance* parent;
 	std::vector<Instance*> children;
-
+	int getId();
 	virtual int addChild(Instance* child);
 	virtual int setParent(Instance* parent);
 	virtual Instance* getChildFromName(const std::string& name);

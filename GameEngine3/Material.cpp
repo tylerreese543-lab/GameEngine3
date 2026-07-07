@@ -6,10 +6,10 @@ Material::Material() {
 	specularity = 1.0f;
 
 	//Texture Resource Initialization
-	textures[eMaterialTexture_Diffuse] = nullptr;
-	textures[eMaterialTexture_AmbientOcclusion] = nullptr;
-	textures[eMaterialTexture_Normal] = nullptr;
-	textures[eMaterialTexture_Specular] = nullptr;
+	textures[eMaterialTexture_Diffuse] = -1;
+	textures[eMaterialTexture_AmbientOcclusion] = -1;
+	textures[eMaterialTexture_Normal] = -1;
+	textures[eMaterialTexture_Specular] = -1;
 
 	SetTextureUseFlags(false, false, false, false);
 }
@@ -26,14 +26,14 @@ void Material::autoSearchTextures(bool autoFlags) {
 	for (int i = eMaterialTexture_Diffuse; i < eMaterialTexture_MAX; ++i) {
 		if (textureUseFlags[i] == false && (!autoFlags)) continue;
 		for (Instance*& child : children) {
-			if (child->type != InstanceType_ImageResource) continue; //Skip any non-resources
-			ImageResource* img = dynamic_cast<ImageResource*>(child);
-			if (img->textureType < 0 || img->textureType > eMaterialTexture_MAX) continue; // -1 = not a texture resource, don't use this
+			ImageResource* img = isImage(child);
+
+			if (!img) continue;
 			if (!img->loaded) img->loadFromFile(img->filePath);
 			
-			if (textures[img->textureType] != nullptr) continue; //Check if there isn't already a valid texture-preset
 
-			textures[img->textureType] = img;
+
+			textures[img->textureType] = img->getId();
 			if (autoFlags) {
 				textureUseFlags[img->textureType] = true;
 			}
@@ -47,10 +47,21 @@ void Material::applyMaterial(ShaderProgram* program) {
 	
 	for (int i = 0; i < eMaterialTexture_MAX; ++i) {
 		if (textureUseFlags[i] == true) {
-			program->bindTexture(program->shaderTextureNames[i], textures[i]);
+			ImageResource* img = isImage(getInstanceById(textures[i]));
+			if (!img) continue;
+			program->bindTexture(program->shaderTextureNames[i], img);
 		}
 	}
 
 	program->setUniform3f(program->shaderUniformNames[eSUniform_Material_DiffuseColor], diffuseColor.R, diffuseColor.G, diffuseColor.B);
 	program->setUniform3f(program->shaderUniformNames[eSUniform_Material_Specularity], specularity);
+}
+
+ImageResource* Material::isImage(Instance* image) {
+	if (!image) return nullptr;
+	if (image->type != InstanceType_ImageResource) return nullptr; //Skip any non-resources
+	if (!isRegistered(image)) return nullptr;
+	ImageResource* img = dynamic_cast<ImageResource*>(image);
+	if (img->textureType < 0 || img->textureType > eMaterialTexture_MAX) return nullptr; // -1 = not a texture resource, don't use this
+	return img;
 }
