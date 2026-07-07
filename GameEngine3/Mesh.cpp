@@ -99,6 +99,11 @@ void Mesh::render(ShaderProgram* program, Camera* camera, Material* material) {
 	if (geometry->vao == 0) {
 		geometry->generateVAO(&program->layout);
 	}
+
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_FRONT);
 	calcTransform();
 	program->useProgram();
 	material->applyMaterial(program);
@@ -123,4 +128,66 @@ void Geometry::autoSearchVBO() {
 	for (int i = 0; i < eVBO_MAX; ++i) {
 		vboFlags[i] = (vbos[i].data != nullptr);
 	}
+}
+
+void Geometry::loadFromFile(std::string filepath, int meshID, int ImporterFlags) {
+	Assimp::Importer importer;
+	const aiScene* scene = importer.ReadFile(filepath, ImporterFlags);
+	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
+		std::cout << "ERROR::ASSIMP::" << importer.GetErrorString() << std::endl;
+		return;
+	}
+
+	if (meshID < 0 || meshID > scene->mNumMeshes) meshID = 0;
+	aiMesh* mesh = scene->mMeshes[meshID];
+
+	int sizePos = mesh->mNumVertices * 3;
+	int sizeUV = mesh->mNumVertices * 2;
+	int sizeNormal = mesh->mNumVertices * 3;
+	int sizeColor = mesh->mNumVertices * 3;
+	int sizeIndices = mesh->mNumFaces * 3;
+	if (mesh->HasPositions()) {
+		vbos[eVBO_Positions].data = new float[sizePos];
+		vbos[eVBO_Positions].calcSize(sizePos);
+		memcpy(vbos[eVBO_Positions].data, mesh->mVertices, vbos[eVBO_Positions].size);
+	}
+	//Automatically use the 1st texture set
+	if (mesh->HasTextureCoords(0)) {
+		vbos[eVBO_UV].data = new float[sizeUV];
+		vbos[eVBO_UV].calcSize(sizeUV);
+		
+		float* float_data = (float*)vbos[eVBO_UV].data;
+		for (int i = 0; i < mesh->mNumVertices; ++i) {
+			float_data[(i * 2) + 0] = mesh->mTextureCoords[0][i].x;
+			float_data[(i * 2) + 1] = mesh->mTextureCoords[0][i].y;
+		}
+	}
+	if (mesh->HasNormals()) {
+		vbos[eVBO_Normal].data = new float[sizeNormal];
+		vbos[eVBO_Normal].calcSize(sizeNormal);
+		memcpy(vbos[eVBO_Normal].data, mesh->mNormals, vbos[eVBO_Normal].size);
+	}
+	if (mesh->HasVertexColors(0)) {
+		vbos[eVBO_Color].data = new float[sizeColor];
+		vbos[eVBO_Color].calcSize(sizeColor);
+		memcpy(vbos[eVBO_Color].data, mesh->mColors[0], vbos[eVBO_Color].size);
+	}
+
+	if (mesh->HasFaces()) {
+		ebo.data = new unsigned int[sizeIndices];
+		ebo.calcSize(sizeIndices);
+
+		unsigned int* int_data = (unsigned int*)ebo.data;
+		for (int i = 0; i < mesh->mNumFaces; ++i) {
+			int_data[(i * 3) + 0] = mesh->mFaces[i].mIndices[0];
+			int_data[(i * 3) + 1] = mesh->mFaces[i].mIndices[1];
+			int_data[(i * 3) + 2] = mesh->mFaces[i].mIndices[2];
+		}
+	}
+	/*
+	TODO: Actually expand these dynamically to fit any extra UV / Color data in the mesh file.
+	Gives more creative freedom to developers in shaders
+	*/
+
+	autoSearchVBO();
 }

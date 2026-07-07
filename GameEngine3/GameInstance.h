@@ -1,8 +1,16 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <unordered_map>
 class Instance {
 public:
+	static int currentinstanceID;
+
+	static void registerInstance(Instance* instance);
+	static bool isRegistered(Instance* instance);
+	static bool isIDValid(int ID);
+	static Instance* getInstanceByID(int ID);
+	static std::unordered_map<int, Instance*> world;
 	enum {
 		InstanceType_Undefined = 0,
 		InstanceType_Base,
@@ -23,6 +31,7 @@ public:
 	virtual int destroy();
 	int instanceId;
 	int type;
+	bool registered;
 	std::string name;
 	Instance* parent;
 	std::vector<Instance*> children;

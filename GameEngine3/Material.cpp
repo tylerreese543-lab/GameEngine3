@@ -28,7 +28,8 @@ void Material::autoSearchTextures(bool autoFlags) {
 		for (Instance*& child : children) {
 			if (child->type != InstanceType_ImageResource) continue; //Skip any non-resources
 			ImageResource* img = dynamic_cast<ImageResource*>(child);
-			if (img->textureType < 0 || img->textureType > eMaterialTexture_MAX || !img->loaded) continue; // -1 = not a texture resource, don't use this
+			if (img->textureType < 0 || img->textureType > eMaterialTexture_MAX) continue; // -1 = not a texture resource, don't use this
+			if (!img->loaded) img->loadFromFile(img->filePath);
 			
 			if (textures[img->textureType] != nullptr) continue; //Check if there isn't already a valid texture-preset
 

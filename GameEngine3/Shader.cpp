@@ -89,6 +89,16 @@ ShaderProgram::ShaderProgram() : Resource() {
 	setDefaultMaterialTexture(eMaterialTexture_Normal,				"t_Normal");
 	setDefaultMaterialTexture(eMaterialTexture_Specular,			"t_Specular");
 }
+
+ShaderProgram::ShaderProgram(std::string vs, std::string fs) : ShaderProgram() {
+	ShaderResource* vertex_shader = new ShaderResource(GL_VERTEX_SHADER);
+	vertex_shader->loadFromFile(vs.c_str());
+	ShaderResource* fragment_shader = new ShaderResource(GL_FRAGMENT_SHADER);
+	fragment_shader->loadFromFile(fs.c_str());
+
+	addChild(vertex_shader);
+	addChild(fragment_shader);
+}
 ShaderProgram::~ShaderProgram() {
 	glDeleteProgram(id);
 }
@@ -160,6 +170,10 @@ int ShaderProgram::createProgram() {
 		glGetActiveAttrib(id, i, maxNameLength, &actualLength, &size, &type, nameBuffer);
     // Fetch the actual layout/location index bound to this attribute
 		GLint location = glGetAttribLocation(id, nameBuffer);
+		if (type == GL_FLOAT_VEC4) {
+			type = GL_FLOAT;
+			count = 4;
+		}
 		if (type == GL_FLOAT_VEC3) {
 			type = GL_FLOAT;
 			count = 3;

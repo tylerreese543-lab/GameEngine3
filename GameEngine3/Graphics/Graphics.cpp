@@ -48,7 +48,7 @@ int Graphics::initializeWindow(int width, int height, const char* title) {
 }
 
 void Graphics::clearWindow() {
-	glClear(GL_COLOR_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	currentFPS = 1.0 / (glfwGetTime() - lastFrameTime);
 	lastFrameTime = glfwGetTime();
 }

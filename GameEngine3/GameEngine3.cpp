@@ -13,67 +13,31 @@ int main() {
 	graphics->matchViewportToWindow = true;
 
 	//SHADERS - load from file, parent to shader program and create;
-	ShaderResource vshader(GL_VERTEX_SHADER);
-	ShaderResource fshader(GL_FRAGMENT_SHADER);
 
-	vshader.loadFromFile("shader/vertex_shader.glsl");
-	fshader.loadFromFile("shader/fragment_shader.glsl");
-
-	ShaderProgram sprog;
-
-	sprog.addChild(&vshader);
-	sprog.addChild(&fshader);
+	ShaderProgram sprog("shader/vertex_shader.glsl", "shader/fragment_shader.glsl");
 	sprog.createProgram();
 
-	//IMAGES - load from file, set texture type to diffuse (because this is a diffuse texture)
-	ImageResource texture0(eMaterialTexture_Diffuse);
-	texture0.loadFromFile("shader/poinsettia.png", GL_RGB);
+	//IMAGES - load from file
+	ImageResource texture0(eMaterialTexture_Diffuse, "shader/poinsettia.png");
+	ImageResource texture1(eMaterialTexture_AmbientOcclusion, "shader/suz_ao.png");
 
 	//MATERIAL - parent images to material, set color
 	Material material;
 	material.addChild(&texture0);
+	material.addChild(&texture1);
 	material.autoSearchTextures(true);
-	material.diffuseColor = col3(1.0);
+	material.diffuseColor = col3(0.4, 0.6, 0.9);
 
-	//GEOMETRY - fill VBO with data and generate VAO;
+	//GEOMETRY - load model from file
 	Geometry mesh;
-
 	Mesh model;
 
 	model.addChild(&mesh);
-	mesh.vbos[eVBO_Positions].data = new float[12] {
-		-1.0, -1.0, 0.0,
-		1.0, -1.0, 0.0,
-		1.0, 1.0, 0.0,
-		-1.0, 1.0, 0.0,
-	};
-	mesh.vbos[eVBO_Color].data = new float[12] {
-		1.0, 0.0, 0.0, 
-		0.0, 1.0, 0.0, 
-		1.0, 1.0, 1.0, 
-		0.0, 0.0, 1.0, 
-	};
-	mesh.vbos[eVBO_UV].data = new float[8] {
-		 0.0, 0.0,
-		 1.0, 0.0,
-		 1.0, 1.0,
-		 0.0, 1.0,
-	};
-	mesh.vbos[eVBO_Positions].calcSize(12);
-	mesh.vbos[eVBO_Color].calcSize(12);
-	mesh.vbos[eVBO_UV].calcSize(8);
-
-	mesh.ebo.data = new unsigned int[6]{
-		0, 1, 2,
-		0, 2, 3,
-	};
-	mesh.ebo.calcSize(6);
-	mesh.generateVAO(&sprog.layout);
+	mesh.loadFromFile("shader/suz_lodetail.fbx");
 
 	//CAMERA - define camera position, planes, and FOV
 
 	Camera camera(0, 0, -2);
-	camera.setPlanes(0.1f, 1000.0f);
 	camera.fov = 70.0f;
 
 	//LOOP
@@ -83,7 +47,7 @@ int main() {
 		camera.updateMatrices();
 		sprog.useProgram();
 		camera.aspect_ratio = graphics->getAspectRatio();
-		model.rotation = vec3(0, 0.4 * glfwGetTime() * 2, 0.2 * glfwGetTime() * 2);
+		model.rotation = vec3(PI * 0.5f, PI * 0.5f, PI * 0.5f);
 		model.render(&sprog, &camera, &material);
 		graphics->windowUpdate();
 	}

@@ -20,10 +20,10 @@ public:
 	std::string filePath;
 
 
-	void loadFromFile(std::string filepath, GLenum fileType);
+	void loadFromFile(std::string filepath, GLenum fileType = -1);
 	void SetGLLoadParams(GLenum WRAP_U, GLenum WRAP_V, GLenum MIN_FILTER, GLenum MAG_FILTER);
 	void BindSlot(int slot);
-	ImageResource(int textureType = -1);
+	ImageResource(int textureType = -1, std::string filepath = "");
 	virtual ~ImageResource();
 	int getWidth();
 	int getHeight();

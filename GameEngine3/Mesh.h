@@ -5,6 +5,9 @@
 #include "Shader.h"
 #include "Camera.h"
 #include "Material.h"
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 class Geometry : public RenderObject {
 private:
 	void _blankInitVBO();
@@ -21,6 +24,8 @@ public:
 	virtual void render();
 	virtual void setVBOFlags(bool hasPositions, bool hasUV, bool hasNormal, bool hasColor, bool hasExtra = false);
 	virtual void autoSearchVBO();
+	//genTangentsToExtra will generate the tangent/bi-tangent and place them in the extra VBO.
+	virtual void loadFromFile(std::string filepath, int meshID = 0, int ImporterFlags = aiProcess_Triangulate);
 };
 
 class Mesh : public Instance {

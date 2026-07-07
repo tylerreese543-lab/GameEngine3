@@ -1,6 +1,7 @@
 #include "TextureResource.h"
 #include "stb_image/stb_image.h"
-ImageResource::ImageResource(int textureType) {
+#include "Graphics/GraphicsWrapper.h"
+ImageResource::ImageResource(int textureType, std::string filepath) {
 	width = 0;
 	height = 0;
 	Channels = 0;
@@ -13,13 +14,43 @@ ImageResource::ImageResource(int textureType) {
 	loaded = false;
 	//Do not use this for any textures
 	this->textureType = textureType;
+	loadFromFile(filepath);
 }
-
 void ImageResource::loadFromFile(std::string filepath, GLenum fileType) {
-	if (loaded == true) return;
-	loaded = true;
 	filePath = filepath;
-	typeLoadFile = fileType;
+	if (loaded == true || filePath == "") return;
+	loaded = true;
+
+	//Auto determines the load type depending on arguments passed. Makes code easier to read but also allows complex modification.
+	if (textureType == -1) {
+		if (fileType == -1) {
+			typeLoadFile = GL_RGB;
+		}
+		else {
+			typeLoadFile = fileType;
+		}
+	}
+	else {
+		if (fileType == -1) {
+			switch (textureType) {
+				case eMaterialTexture_Diffuse:
+				case eMaterialTexture_Normal:
+					typeLoadFile = GL_RGB;
+					break;
+				case eMaterialTexture_AmbientOcclusion:
+				case eMaterialTexture_Specular:
+					typeLoadFile = GL_RED;
+					break;
+				default:
+					typeLoadFile = GL_RGB;
+					break;
+			}
+		}
+		else {
+			typeLoadFile = fileType;
+		}
+	}
+
 
 	stbi_set_flip_vertically_on_load(1);
 	glGenTextures(1, &GLTextureID);
@@ -46,6 +77,10 @@ void ImageResource::loadFromFile(std::string filepath, GLenum fileType) {
 	}
 	Data = stbi_load(filePath.c_str(), &width, &height, &Channels, channels);
 	
+	if (!Data) {
+		printf("ERROR: Couldn't load texture: %s", stbi_failure_reason());
+		return;
+	}
 	if (textureType > -1) {
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 		glTexImage2D(GL_TEXTURE_2D, 0, typeLoadFile, width, height, 0, typeLoadFile, GL_UNSIGNED_BYTE, Data);

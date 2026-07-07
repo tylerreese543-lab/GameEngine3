@@ -57,4 +57,5 @@ public:
 	void setUniformSMat(std::string uniform, const float* fv, bool transposed, int size);
 	~ShaderProgram();
 	ShaderProgram();
+	ShaderProgram(std::string vs, std::string fs);
 };
