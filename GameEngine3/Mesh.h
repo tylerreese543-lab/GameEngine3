@@ -30,19 +30,26 @@ public:
 
 class Mesh : public Instance {
 	//Finds the geometry based on this Mesh's children.
-	virtual Geometry* autoGeometry();
 	virtual void calcTransform();
+	static std::set<Mesh*> render_objects;
 public:
-	vec3 position;
+
 	vec3 rotation;
+	vec3 position;
 	vec3 scale;
-	Geometry* geometry;
+	bool visible;
+	int geometry;
+	int material;
 	mat4 transform;
-	virtual void render(ShaderProgram* program, Camera* camera, Material* material);
+	virtual void render(Camera* camera);
 
 
 	Mesh();
 	void setPosition(vec3 position);
 	void setRotation(vec3 rotation);
 	void setScale(vec3 scale);
+
+	static void renderAllMeshes(Camera* camera);
+
+	virtual int destroy();
 };

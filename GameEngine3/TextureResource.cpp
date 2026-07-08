@@ -120,3 +120,10 @@ ImageResource::~ImageResource() {
 		Data = nullptr;
 	}
 }
+
+Instance* ImageResource::clone_this() {
+	ImageResource* i = (ImageResource*)registerInstance(new ImageResource(*this), true);
+	loaded = false;
+	loadFromFile(filePath);
+	return i;
+}

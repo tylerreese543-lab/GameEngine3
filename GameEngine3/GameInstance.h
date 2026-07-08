@@ -2,11 +2,12 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <set>
 class Instance {
-public:
 	static int currentinstanceID;
+public:
 
-	static void registerInstance(Instance* instance);
+	static Instance* registerInstance(Instance* instance, bool clone = false);
 	static bool isRegistered(Instance* instance);
 	static bool isIdValid(int ID);
 	static Instance* getInstanceById(int ID);
@@ -22,11 +23,16 @@ public:
 		InstanceType_ShaderProgram,
 		InstanceType_Camera,
 		InstanceType_Mesh,
+		InstanceType_Scene,
+		InstanceType_Material,
 		InstanceType_Count
 	};
 	static const std::string instanceTypeNames[InstanceType_Count];
 	Instance();
 	virtual ~Instance();
+	//Clones an individual instance
+	virtual Instance* clone_this();
+	//Clones this instance's entire hierarchy
 	virtual Instance* clone();
 	virtual int destroy();
 	int instanceId;
@@ -41,6 +47,8 @@ public:
 	virtual Instance* getChildFromName(const std::string& name);
 	virtual Instance* getChildFromId(int id);
 	virtual Instance* getChildFromIndex(int index);
+	virtual Instance* getChildFromType(int type);
+	virtual int getChildIdFromType(int type);
 	static std::string getInstanceNameFromType(int type);
 
 	virtual int save(FILE* file); //Returns a pointer to the data representing this instance. The caller is responsible for freeing this memory.

@@ -2,6 +2,7 @@
 
 int Instance::currentinstanceID = 0;
 std::unordered_map<int, Instance*> Instance::world;
+
 const std::string Instance::instanceTypeNames[Instance::InstanceType_Count] = {
 	"Undefined",
 	"Base",
@@ -9,8 +10,10 @@ const std::string Instance::instanceTypeNames[Instance::InstanceType_Count] = {
 	"Mesh",
 	"Resource",
 	"ShaderResource",
-	"ShaderProgram"
-
+	"ShaderProgram",
+	"Camera",
+	"Mesh",
+	"Material"
 };
 Instance::Instance() {
 	instanceId = 0;
@@ -24,10 +27,20 @@ Instance::Instance() {
 
 Instance::~Instance() {}
 
-Instance* Instance::clone() {
-	return new Instance(*this);
+Instance* Instance::clone_this() {
+	return registerInstance(new Instance(*this), true);
 }
+Instance* Instance::clone() {
+	Instance* i = this->clone_this();
 
+	i->children.clear();
+
+	for (Instance* child : children) {
+		child->clone()->setParent(i);
+	}
+
+	return i;
+}
 int Instance::destroy() {
 	for (Instance* child : children) {
 		child->destroy();
@@ -43,6 +56,9 @@ int Instance::addChild(Instance* child) {
 	//Check if the child is null
 	if (child == nullptr) {
 		return -1; // Invalid child
+	}
+	if (child->parent != this && child->parent != nullptr) {
+		child->parent->children.erase(std::remove(child->parent->children.begin(), child->parent->children.end(), this), child->parent->children.end());
 	}
 	// Check if the child is already in the children vector
 	for (Instance* c : children) {
@@ -62,10 +78,6 @@ int Instance::setParent(Instance* p) {
 	if (parent == p) {
 		return 0; // Already has the same parent
 	}
-	if (parent != nullptr) {
-		parent->children.erase(std::remove(parent->children.begin(), parent->children.end(), this), parent->children.end());
-	}
-	parent = p;
 	p->addChild(this);
 	return 0;
 }
@@ -76,17 +88,34 @@ Instance* Instance::getChildFromName(const std::string& name) {
 			return child;
 		}
 	}
-	printf("ERROR: Child with name '%s' not found.\n", name.c_str());
+	//printf("ERROR: Child with name '%s' not found.\n", name.c_str());
 	return nullptr; // Child not found
 }
-
+Instance* Instance::getChildFromType(int typ) {
+	for (Instance* child : children) {
+		if (child->type == typ) {
+			return child;
+		}
+	}
+	//printf("ERROR: Child with type '%s' not found.\n", getInstanceNameFromType(typ).c_str());
+	return nullptr; // Child not found
+}
+int Instance::getChildIdFromType(int typ) {
+	for (Instance* child : children) {
+		if (child->type == typ) {
+			return child->getId();
+		}
+	}
+	//printf("ERROR: Child with type '%s' not found.\n", getInstanceNameFromType(typ).c_str());
+	return -1; // Child not found
+}
 Instance* Instance::getChildFromId(int id) {
 	for (Instance* child : children) {
 		if (child->instanceId == id) {
 			return child;
 		}
 	}
-	printf("ERROR: Child with ID '%d' not found.\n", id);
+	//printf("ERROR: Child with ID '%d' not found.\n", id);
 	return nullptr; // Child not found
 }
 
@@ -133,22 +162,26 @@ void* offset(void* ptr, size_t offset) {
 	return (void*)((char*)ptr + offset);
 }
 
-void Instance::registerInstance(Instance* inst) {
-	if (inst->registered == false) {
+Instance* Instance::registerInstance(Instance* inst, bool clone) {
+	if (inst->registered == false || clone) {
 		inst->registered = true;
 		inst->instanceId = ++currentinstanceID;
 		world[currentinstanceID] = inst;
 	}
+
+	return inst;
 }
 bool Instance::isIdValid(int ID) {
 	return world.count(ID) > 0;
 }
 bool Instance::isRegistered(Instance* inst) {
+	if (inst == nullptr) return false;
 	return (world[inst->getId()] == inst) && (inst->registered == true) && isIdValid(inst->getId());
 }
 
 Instance* Instance::getInstanceById(int ID) {
 	if (!isIdValid(ID)) return nullptr;
+	if (!isRegistered(world[ID])) return nullptr;
 	return world[ID];
 }
 

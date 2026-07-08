@@ -30,4 +30,6 @@ public:
 	char* getImageData();
 	int getImageBufferLength();
 	int getNumChannels();
+
+	virtual Instance* clone_this();
 };

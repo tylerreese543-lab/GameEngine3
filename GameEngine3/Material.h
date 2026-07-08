@@ -7,18 +7,29 @@
 class Material : public Instance
 {
 	ImageResource* isImage(Instance* inst);
+	ShaderProgram* isShader(Instance* inst);
+
+	int textures[eMaterialTexture_MAX];
+	int shader;
 public:
 	//Can be from another instance, independent, or it's own children
-	int textures[eMaterialTexture_MAX];
+
 	bool textureUseFlags[eMaterialTexture_MAX];
 
 	col3 diffuseColor;
 	float specularity;
 	
 	Material();
+
+	void setTexture(ImageResource* index);
+	void setShader(ShaderProgram* index);
 	//Will automatically look for child textures if a flag is present but no texture is bound.
-	void autoSearchTextures(bool autoFlags);
+	void autoPrepare(bool autoFlags);
 	void SetTextureUseFlags(bool useDiffuse, bool useAmbientOcclusion, bool useNormal, bool useSpecular);
-	void applyMaterial(ShaderProgram* program);
+	void applyMaterial();
+
+	int getShaderInstanceId();
+	int getTextureInstanceId(int target);
+	virtual Instance* clone_this();
 };
 

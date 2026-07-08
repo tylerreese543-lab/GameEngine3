@@ -1,5 +1,5 @@
 #include "Mesh.h"
-
+std::set<Mesh*> Mesh::render_objects;
 Geometry::Geometry() : RenderObject() {
 	name = "Mesh";
 	type = InstanceType_Geometry;
@@ -51,12 +51,18 @@ void Geometry::_blankInitVBO() {
 		vbos[i].usage = GL_STATIC_DRAW;
 	}
 }
-Mesh::Mesh() {
+Mesh::Mesh() : Instance() {
 	setPosition(vec3(0, 0, 0));
 	setRotation(vec3(0, 0, 0));
 	setScale(vec3(1));
+	
+	type = InstanceType_Mesh;
+	name = "Mesh";
+	geometry = -1;
 
-	geometry = nullptr;
+	visible = true;
+
+	render_objects.insert(this);
 }
 
 void Mesh::setPosition(vec3 pos) {
@@ -75,29 +81,37 @@ void Mesh::calcTransform() {
 	transform = mat4::transform(position, scale, rotation);
 }
 
-void Mesh::render(ShaderProgram* program, Camera* camera, Material* material) {
-	if (geometry == nullptr) {
-		geometry = autoGeometry();
+void Mesh::render(Camera* camera) {
+	
+	if (!visible) return;
+	if (!isIdValid(geometry)) {
+		geometry = getChildIdFromType(InstanceType_Geometry);
 	}
-	if (geometry == nullptr) {
-		printf("Abort rendering of '%s' - has no geometry bound.", name.c_str());
+	if (!isIdValid(material)) {
+		material = getChildIdFromType(InstanceType_Material);
+	}
+	if (geometry == -1) {
+		printf("Abort rendering of '%s' - has no geometry bound.\n", name.c_str());
+		return;
+	}
+	if (material == -1) {
+		printf("Abort rendering of '%s' - has no material bound.\n", name.c_str());
+		return;
+	}
+	if (camera == nullptr) {
+		printf("Abort rendering of '%s' - has no camera attached.\n", name.c_str());
+		return;
+	}
+	Material* m = (Material*)getInstanceById(material);
+	ShaderProgram* program = (ShaderProgram*)getInstanceById(m->getShaderInstanceId());
+	if (!program) {
+		printf("Abort rendering of '%s' - material has no shader program attached.\n", name.c_str());
 		return;
 	}
 
-	if (camera == nullptr) {
-		printf("Abort rendering of '%s' - has no camera attached.", name.c_str());
-		return;
-	}
-	if (program == nullptr) {
-		printf("Abort rendering of '%s' - has no shader program attached.", name.c_str());
-		return;
-	}
-	if (material == nullptr) {
-		printf("Abort rendering of '%s' - has no material attached.", name.c_str());
-		return;
-	}
-	if (geometry->vao == 0) {
-		geometry->generateVAO(&program->layout);
+	Geometry* g = (Geometry*)getInstanceById(geometry);
+	if (g->vao == 0) {
+		g->generateVAO(&program->layout);
 	}
 
 	glEnable(GL_DEPTH_TEST);
@@ -105,23 +119,13 @@ void Mesh::render(ShaderProgram* program, Camera* camera, Material* material) {
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_FRONT);
 	calcTransform();
-	program->useProgram();
-	material->applyMaterial(program);
+	m->applyMaterial();
 	program->setUniformSMat(program->shaderUniformNames[eSUniform_ModelTransformMatrix], transform, GL_TRUE, 4);
 	program->setUniform3f(program->shaderUniformNames[eSUniform_CameraPosition], camera->position);
 	program->setUniformSMat(program->shaderUniformNames[eSUniform_CameraLookMatrix], camera->look, GL_TRUE, 3);
 	program->setUniformSMat(program->shaderUniformNames[eSUniform_CameraProjectionMatrix], camera->projection, GL_TRUE, 4);
-	geometry->render();
+	g->render();
 	
-}
-
-Geometry* Mesh::autoGeometry() {
-	for (Instance*& child : children) {
-		if (child->type == InstanceType_Geometry) {
-			return dynamic_cast<Geometry*>(child);
-		}
-	}
-	return nullptr;
 }
 
 void Geometry::autoSearchVBO() {
@@ -190,4 +194,16 @@ void Geometry::loadFromFile(std::string filepath, int meshID, int ImporterFlags)
 	*/
 
 	autoSearchVBO();
+}
+
+void Mesh::renderAllMeshes(Camera* camera) {
+	if (!camera) return;
+	for (Mesh* m : render_objects) {
+		m->render(camera);
+	}
+}
+
+int Mesh::destroy() {
+	render_objects.erase(this);
+	return Instance::destroy();
 }
