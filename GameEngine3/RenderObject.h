@@ -7,7 +7,6 @@ class RenderObject : public Instance {
 public:
 	GLuint vao;
 	RenderObject();
-	virtual Instance* clone();
 	virtual ~RenderObject();
 	virtual void render();
 };

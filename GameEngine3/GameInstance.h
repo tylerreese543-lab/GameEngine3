@@ -49,6 +49,9 @@ public:
 	virtual Instance* getChildFromIndex(int index);
 	virtual Instance* getChildFromType(int type);
 	virtual int getChildIdFromType(int type);
+
+	void listChildren();
+
 	static std::string getInstanceNameFromType(int type);
 
 	virtual int save(FILE* file); //Returns a pointer to the data representing this instance. The caller is responsible for freeing this memory.

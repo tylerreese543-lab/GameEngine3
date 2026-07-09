@@ -1,13 +1,10 @@
 #include "RenderObject.h"
-RenderObject::RenderObject() {
+RenderObject::RenderObject() : Instance() {
 	vao = 0;
 	type = InstanceType_RenderObject;
 }
 RenderObject::~RenderObject() {
 	glDeleteVertexArrays(1, &vao);
-}
-Instance* RenderObject::clone() {
-	return new RenderObject(*this);
 }
 
 void RenderObject::render() {

@@ -61,7 +61,6 @@ void BufferLayout::apply() {
 
 	}
 
-	printf("Str: %d, size: %d\n", getStride(), (int)elements.size());
 }
 
 void BufferLayout::remove() {

@@ -38,25 +38,22 @@ int main() {
 	material->setShader(sprog);
 	material->autoPrepare(true);
 	material->diffuseColor = col3(0.4, 0.6, 0.9);
-
 	Material* material2 = (Material*)material->clone();
-	material2->getChildFromName("DiffuseTex")->name = "DiffuseTex2";
 	material2->autoPrepare(true);
-	material->diffuseColor = col3(0.9, 0.6, 0.4);
+	material2->diffuseColor = col3(0.9, 0.6, 0.4);
 	//GEOMETRY - load model from file
 	Geometry* mesh = new Geometry();
 	mesh->loadFromFile("shader/suz_lodetail.fbx");
 	Mesh* model = new Mesh();
-	Mesh* model2 = new Mesh();
 	model->material = material->getId();
-	model2->material = material2->getId();
-	model->geometry = mesh->getId();
-	model2->geometry = mesh->getId();
-
+	mesh->setParent(model);
 	model->setPosition(vec3(-1, 0, 5));
-	model2->setPosition(vec3(1, 0, 5));
-	scene->addChild(model);
-	scene->addChild(model2);
+	model->listChildren();
+	Mesh* model2 = (Mesh*)model->clone();
+	model2->addChild(material2);
+	model2->material = -1;
+	model2->geometry = -1;
+	
 	//CAMERA - define camera position, planes, and FOV
 	//LOOP
 	while (graphics->shouldOpenWindow()) {

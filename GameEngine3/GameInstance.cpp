@@ -7,12 +7,13 @@ const std::string Instance::instanceTypeNames[Instance::InstanceType_Count] = {
 	"Undefined",
 	"Base",
 	"RenderObject",
-	"Mesh",
+	"Geometry",
 	"Resource",
 	"ShaderResource",
 	"ShaderProgram",
 	"Camera",
 	"Mesh",
+	"Scene",
 	"Material"
 };
 Instance::Instance() {
@@ -167,6 +168,7 @@ Instance* Instance::registerInstance(Instance* inst, bool clone) {
 		inst->registered = true;
 		inst->instanceId = ++currentinstanceID;
 		world[currentinstanceID] = inst;
+		printf("Registering new Instance: ID = %d\n", inst->getId());
 	}
 
 	return inst;
@@ -187,4 +189,14 @@ Instance* Instance::getInstanceById(int ID) {
 
 int Instance::getId() {
 	return instanceId;
+}
+
+void Instance::listChildren() {
+
+	printf("--- Printing children for instance '%s' ---\n", name.c_str());
+	int i = 0;
+	for (Instance* child : children) {
+		printf("[%d] Name: '%s', ID: %d, Type: %s\n", i, child->name.c_str(), child->getId(), getInstanceNameFromType(child->type).c_str());
+		++i;
+	}
 }

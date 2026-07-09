@@ -18,6 +18,12 @@ Buffer::Buffer() {
 }
 Buffer::~Buffer() {
 	glDeleteBuffers(1, &id);
+	if (data != nullptr) {
+		free(data);
+		data = nullptr;
+	}
+	size = 0;
+
 }
 
 int Buffer::generate() {
@@ -53,4 +59,8 @@ int Buffer::update() {
 
 void Buffer::calcSize(int count) {
 	size = count * element_size;
+}
+
+int Buffer::getCount() {
+	return size / element_size;
 }

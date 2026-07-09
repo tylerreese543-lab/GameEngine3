@@ -1,6 +1,6 @@
 #pragma once
 #include "graphics_include.h"
-
+#include <stdlib.h>
 class Buffer {
 	public:
 	GLuint id;
@@ -19,4 +19,5 @@ class Buffer {
 	virtual int update();
 	//Calculates 'size' based off of 'element_size' and the count as an argument
 	virtual void calcSize(int count);
+	int getCount();
 };

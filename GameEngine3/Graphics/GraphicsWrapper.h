@@ -1,7 +1,7 @@
 #pragma once
 
 #include "graphics_include.h"
-
+#include <stdlib.h>
 
 //basic functions made easier to use for graphics. More to come
 
