@@ -11,6 +11,25 @@ struct vec2 {
 
 	vec2();
 	vec2(float, float);
+
+		inline vec2 operator* (const float& r) const {
+		return vec2(X * r, Y * r);
+	}
+	inline vec2 operator+ (const vec2& r) const {
+		return vec2(X + r.X, Y + r.Y);
+	}
+	inline vec2 operator - (const vec2& r) const {
+		return vec2(X - r.X, Y - r.Y);
+	}
+	inline vec2 operator - () const {
+		return vec2(-X, -Y);
+	}
+	inline vec2 operator* (const vec2& r) const {
+		return vec2(X * r.X, Y * r.Y);
+	}
+	inline vec2 operator/ (const vec2& r) const {
+		return vec2(X / r.X, Y * r.Y);
+	}
 };
 struct vec4 {
 	float X;

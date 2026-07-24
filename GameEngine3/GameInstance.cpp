@@ -10,11 +10,13 @@ const std::string Instance::instanceTypeNames[Instance::InstanceType_Count] = {
 	"Geometry",
 	"Resource",
 	"ShaderResource",
+	"ImageResource",
 	"ShaderProgram",
 	"Camera",
 	"Mesh",
 	"Scene",
-	"Material"
+	"Material",
+	"Script"
 };
 Instance::Instance() {
 	instanceId = 0;
@@ -168,7 +170,7 @@ Instance* Instance::registerInstance(Instance* inst, bool clone) {
 		inst->registered = true;
 		inst->instanceId = ++currentinstanceID;
 		world[currentinstanceID] = inst;
-		printf("Registering new Instance: ID = %d\n", inst->getId());
+		//printf("Registering new Instance: ID = %d\n", inst->getId());
 	}
 
 	return inst;
@@ -200,3 +202,5 @@ void Instance::listChildren() {
 		++i;
 	}
 }
+
+void Instance::update(float deltaTime) {}

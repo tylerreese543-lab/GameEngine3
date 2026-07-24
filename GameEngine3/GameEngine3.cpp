@@ -4,8 +4,9 @@
 #include "Shader.h"
 #include "TextureResource.h"
 #include "Scene.h"
+#include "Material.h"
+#include "LuaResource.h"
 int main() {
-
 
 	//GRAPHICS - get the graphics instance and initialize
 	Graphics* graphics = Graphics::getInstance();
@@ -13,6 +14,8 @@ int main() {
 	Scene* scene = new Scene();
 	graphics->initializeWindow(800, 600, "Game Engine 3");
 	graphics->matchViewportToWindow = true;
+
+	LuaResource::InitializeLua();
 
 	Camera* camera = new Camera(0, 0, -2);
 	camera->fov = 70.0f;
@@ -48,17 +51,28 @@ int main() {
 	model->material = material->getId();
 	mesh->setParent(model);
 	model->setPosition(vec3(-1, 0, 5));
-	model->listChildren();
 	Mesh* model2 = (Mesh*)model->clone();
 	model2->addChild(material2);
 	model2->material = -1;
 	model2->geometry = -1;
 	
+	LuaResource* script = new LuaResource("shader/program.lua");
+	script->setParent(camera);
+	script->loadScript();
 	//CAMERA - define camera position, planes, and FOV
 	//LOOP
+
 	while (graphics->shouldOpenWindow()) {
+
+		if ((glfwGetTime() - graphics->lastFrameTime) < (1.0 / (float)graphics->targetFPS)) continue;
 		scene->PreRender();
 		model->rotation = vec3(PI * 0.5f, PI * 0.5f, PI * 0.5f);
+
+		for (auto i : Instance::world) {
+			if (i.second) {
+				i.second->update(graphics->deltaTime);
+			}
+		}
 		scene->RenderScene();
 	}
 	glfwTerminate();

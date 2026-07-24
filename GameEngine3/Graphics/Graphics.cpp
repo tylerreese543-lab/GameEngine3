@@ -13,11 +13,18 @@ Graphics::Graphics() {
 	window = nullptr;
 	lastFrameTime = 0.0;
 	currentFPS = 0.0;
+	mouse_data = nullptr;
 }
 
 Graphics::~Graphics() {
 	if (window != nullptr) {
 		glfwDestroyWindow(window);
+		window = nullptr;
+	}
+
+	if (mouse_data != nullptr) {
+		delete mouse_data;
+		mouse_data = nullptr;
 	}
 	glfwTerminate();
 }
@@ -44,12 +51,15 @@ int Graphics::initializeWindow(int width, int height, const char* title) {
 		return -1;
 	}
 	glViewport(0, 0, width, height);
+
+	mouse_data = new MouseData();
 	return 0;
 }
 
 void Graphics::clearWindow() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	currentFPS = 1.0 / (glfwGetTime() - lastFrameTime);
+	deltaTime = (glfwGetTime() - lastFrameTime);
+	currentFPS = 1.0 / deltaTime;
 	lastFrameTime = glfwGetTime();
 }
 void Graphics::windowUpdate() {
@@ -57,6 +67,7 @@ void Graphics::windowUpdate() {
 	if (matchViewportToWindow) {
 		glViewport(0, 0, windowWidth, windowHeight);
 	}
+	mouse_data->update(this);
 	glfwSwapInterval(vsyncEnabled ? 1 : 0);
 	glfwSwapBuffers(window);
 	glfwPollEvents();
@@ -75,4 +86,15 @@ Graphics* Graphics::getInstance() {
 
 float Graphics::getAspectRatio() {
 	return (float)windowHeight / (float)windowWidth;
+}
+
+MouseData::MouseData() {
+	x = 0;
+	y = 0;
+}
+
+void MouseData::update(Graphics* g) {
+	glfwGetCursorPos(g->window, &(x), &(y));
+	screenFull = vec2(x, y) - (vec2(g->windowWidth, g->windowHeight) * 0.5);
+	screenNormalized = (screenFull * 2) / vec2(g->windowWidth, g->windowHeight);
 }

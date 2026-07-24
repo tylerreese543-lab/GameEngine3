@@ -6,7 +6,7 @@ Camera::Camera() : Instance() {
 	near_plane = 0;
 	far_plane = 0;
 	aspect_ratio = 1;
-
+	name = "Camera";
 	type = InstanceType_Camera;
 	setPlanes(0.1, 1000.0f);
 	fov = 90;

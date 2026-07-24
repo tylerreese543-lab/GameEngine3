@@ -25,6 +25,7 @@ public:
 		InstanceType_Mesh,
 		InstanceType_Scene,
 		InstanceType_Material,
+		InstanceType_LuaResource,
 		InstanceType_Count
 	};
 	static const std::string instanceTypeNames[InstanceType_Count];
@@ -48,6 +49,7 @@ public:
 	virtual Instance* getChildFromId(int id);
 	virtual Instance* getChildFromIndex(int index);
 	virtual Instance* getChildFromType(int type);
+	virtual void update(float deltaTime);
 	virtual int getChildIdFromType(int type);
 
 	void listChildren();

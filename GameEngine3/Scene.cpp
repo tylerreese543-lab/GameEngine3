@@ -7,7 +7,8 @@ Scene::Scene() : Instance() {
 }
 
 void Scene::PreRender() {
-	Graphics::getInstance()->clearWindow();
+	Graphics* g = Graphics::getInstance();
+	g->clearWindow();
 
 	if (!isIdValid(camera)) {
 		camera = getChildIdFromType(InstanceType_Camera);
