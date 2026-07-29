@@ -5,6 +5,7 @@
 #include "Scene.h"
 #include "Material.h"
 #include "Shader.h"
+#include "Value.h"
 sol::state LuaResource::lua;
 LuaResource::LuaResource(std::string filepath) : Resource() {
 	name = "Script";
@@ -36,6 +37,18 @@ sol::object LuaResource::InstanceToSolObj(sol::this_state ts, Instance* i) {
 		return sol::make_object(ts, (Resource*)i);
 	case InstanceType_Scene:
 		return sol::make_object(ts, (Scene*)i);
+	case InstanceType_Value:
+		return sol::make_object(ts, (Value*)i);
+	case InstanceType_IntegerValue:
+		return sol::make_object(ts, (IntegerValue*)i);
+	case InstanceType_BooleanValue:
+		return sol::make_object(ts, (BooleanValue*)i);
+	case InstanceType_StringValue:
+		return sol::make_object(ts, (StringValue*)i);
+	case InstanceType_FloatValue:
+		return sol::make_object(ts, (FloatValue*)i);
+	case InstanceType_InstanceValue:
+		return sol::make_object(ts, (InstanceValue*)i);
 	default:
 		//Base instance class - no casting necessary
 		return sol::make_object(ts, i);
@@ -225,6 +238,41 @@ void LuaResource::InitializeLua() {
 		"Channels", &ImageResource::getNumChannels,
 		"Size", &ImageResource::getImageBufferLength
 	);
+
+	auto ValueType = lua.new_usertype<Value>("ValueBase",
+		sol::base_classes, sol::bases<Instance>()
+	);
+
+	//values :( at least they work...
+	auto IntValueType = lua.new_usertype<IntegerValue>("IntValue",
+		sol::base_classes, sol::bases<Value, Instance>(),
+		"Value", &IntegerValue::value
+	);
+
+	auto FloatValueType = lua.new_usertype<FloatValue>("FloatValue",
+		sol::base_classes, sol::bases<Value, Instance>(),
+		"Value", &FloatValue::value
+	);
+
+	auto StringValueType = lua.new_usertype<StringValue>("StringValue",
+		sol::base_classes, sol::bases<Value, Instance>(),
+		"Value", &StringValue::value
+	);
+	auto BooleanValueType = lua.new_usertype<StringValue>("BoolValue",
+		sol::base_classes, sol::bases<Value, Instance>(),
+		"Value", &BooleanValue::value
+	);
+	auto InstanceValueType = lua.new_usertype<InstanceValue>("Reference",
+		sol::base_classes, sol::bases<Value, Instance>(),
+		"Value", sol::property(
+			[](InstanceValue* self, sol::this_state ts) {
+				return InstanceToSolObj(ts, self->get());
+			},
+			[](InstanceValue* self, sol::this_state ts, sol::object obj) {
+				self->value = obj.as<Instance*>()->getId();
+			}
+		)
+	);
 	//This freaking blows, but it works i guess
 	InstanceType[sol::meta_function::index] =			&LuaResource::__luaIndex;
 	ResourceType[sol::meta_function::index] =			&LuaResource::__luaIndex;
@@ -236,6 +284,12 @@ void LuaResource::InitializeLua() {
 	ShaderProgramType[sol::meta_function::index] =		&LuaResource::__luaIndex;
 	ShaderResourceType[sol::meta_function::index] =		&LuaResource::__luaIndex;
 	SceneType[sol::meta_function::index] =				&LuaResource::__luaIndex;
+	ValueType[sol::meta_function::index] =				&LuaResource::__luaIndex;
+	IntValueType[sol::meta_function::index] =			&LuaResource::__luaIndex;
+	FloatValueType[sol::meta_function::index] =			&LuaResource::__luaIndex;
+	StringValueType[sol::meta_function::index] =		&LuaResource::__luaIndex;
+	BooleanValueType[sol::meta_function::index] =		&LuaResource::__luaIndex;
+	InstanceValueType[sol::meta_function::index] =		&LuaResource::__luaIndex;
 
 }
 LuaResource::~LuaResource() {

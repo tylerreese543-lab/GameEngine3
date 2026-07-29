@@ -26,6 +26,12 @@ public:
 		InstanceType_Scene,
 		InstanceType_Material,
 		InstanceType_LuaResource,
+		InstanceType_Value,
+		InstanceType_IntegerValue,
+		InstanceType_BooleanValue,
+		InstanceType_FloatValue,
+		InstanceType_StringValue,
+		InstanceType_InstanceValue,
 		InstanceType_Count
 	};
 	static const std::string instanceTypeNames[InstanceType_Count];

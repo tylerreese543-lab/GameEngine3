@@ -16,7 +16,13 @@ const std::string Instance::instanceTypeNames[Instance::InstanceType_Count] = {
 	"Mesh",
 	"Scene",
 	"Material",
-	"Script"
+	"Script",
+	"Value",
+	"IntValue",
+	"BoolValue",
+	"FloatValue",
+	"StringValue",
+	"InstanceValue",
 };
 Instance::Instance() {
 	instanceId = 0;
