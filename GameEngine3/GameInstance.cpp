@@ -5,7 +5,7 @@ std::unordered_map<int, Instance*> Instance::world;
 
 const std::string Instance::instanceTypeNames[Instance::InstanceType_Count] = {
 	"Undefined",
-	"Base",
+	"Instance",
 	"RenderObject",
 	"Geometry",
 	"Resource",

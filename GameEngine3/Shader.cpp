@@ -93,9 +93,10 @@ ShaderProgram::ShaderProgram() : Resource() {
 ShaderProgram::ShaderProgram(std::string vs, std::string fs) : ShaderProgram() {
 	ShaderResource* vertex_shader = new ShaderResource(GL_VERTEX_SHADER);
 	vertex_shader->loadFromFile(vs.c_str());
+	vertex_shader->name = "Vertex Shader";
 	ShaderResource* fragment_shader = new ShaderResource(GL_FRAGMENT_SHADER);
 	fragment_shader->loadFromFile(fs.c_str());
-
+	fragment_shader->name = "Fragment Shader";
 	addChild(vertex_shader);
 	addChild(fragment_shader);
 }

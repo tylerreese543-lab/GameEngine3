@@ -14,9 +14,16 @@ public:
 	vec2 screenFull;
 
 	MouseData();
-	void update(Graphics* g);
+	void update();
+	void setRawMouseInput(bool rawMouseInput);
+	bool isMouseDown(int button);
+	bool isRawMouseInput();
 };
-
+class KeyboardData {
+public:
+	KeyboardData();
+	bool isKeyDown(int key);
+};
 class Graphics {
 	static Graphics* instance;
 public:
@@ -35,7 +42,8 @@ public:
 	double deltaTime;
 	double lastFrameTime;
 
-	MouseData* mouse_data;
+	MouseData mouse_data;
+	KeyboardData keyboard_data;
 	GLFWwindow* window;
 
 	int initializeWindow(int width, int height, const char* title);
@@ -47,3 +55,4 @@ public:
 	static Graphics* getInstance();
 	float getAspectRatio();
 };
+

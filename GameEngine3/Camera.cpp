@@ -29,8 +29,8 @@ void Camera::updateMatrices() {
 		0, 0, 1, 0
 	);
 
-	look = mat3::yxz(rotation.X, rotation.Y, rotation.Z);
-
+	look = mat3::yxz(-rotation.X, -rotation.Y, -rotation.Z);
+	moveDirection2D = mat3::yrot(-rotation.Y);
 }
 
 float Camera::fovGL() {

@@ -16,7 +16,7 @@ public:
 
 	bool textureUseFlags[eMaterialTexture_MAX];
 
-	col3 diffuseColor;
+	vec3 diffuseColor;
 	float specularity;
 	
 	Material();

@@ -40,10 +40,11 @@ int main() {
 	material->addChild(texture1);
 	material->setShader(sprog);
 	material->autoPrepare(true);
-	material->diffuseColor = col3(0.4, 0.6, 0.9);
+	material->name = "Materiala";
+	material->diffuseColor = vec3(0.4, 0.6, 0.9);
 	Material* material2 = (Material*)material->clone();
 	material2->autoPrepare(true);
-	material2->diffuseColor = col3(0.9, 0.6, 0.4);
+	material2->diffuseColor = vec3(0.9, 0.6, 0.4);
 	//GEOMETRY - load model from file
 	Geometry* mesh = new Geometry();
 	mesh->loadFromFile("shader/suz_lodetail.fbx");
@@ -58,6 +59,8 @@ int main() {
 	
 	LuaResource* script = new LuaResource("shader/program.lua");
 	script->setParent(camera);
+	model->setParent(script);
+	model2->setParent(script);
 	script->loadScript();
 	//CAMERA - define camera position, planes, and FOV
 	//LOOP

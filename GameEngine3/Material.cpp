@@ -2,7 +2,7 @@
 
 Material::Material() : Instance() {
 
-	diffuseColor = col3(1.0);
+	diffuseColor = vec3(1.0);
 	specularity = 1.0f;
 
 	//Texture Resource Initialization
@@ -12,6 +12,7 @@ Material::Material() : Instance() {
 	textures[eMaterialTexture_Specular] = -1;
 	shader = -1;
 	type = InstanceType_Material;
+	name = "Material";
 	SetTextureUseFlags(false, false, false, false);
 }
 
@@ -63,7 +64,7 @@ void Material::applyMaterial() {
 		}
 	}
 
-	program->setUniform3f(program->shaderUniformNames[eSUniform_Material_DiffuseColor], diffuseColor.R, diffuseColor.G, diffuseColor.B);
+	program->setUniform3f(program->shaderUniformNames[eSUniform_Material_DiffuseColor], diffuseColor.X, diffuseColor.Y, diffuseColor.Z);
 	program->setUniform3f(program->shaderUniformNames[eSUniform_Material_Specularity], specularity);
 }
 

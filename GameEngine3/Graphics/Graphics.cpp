@@ -13,18 +13,12 @@ Graphics::Graphics() {
 	window = nullptr;
 	lastFrameTime = 0.0;
 	currentFPS = 0.0;
-	mouse_data = nullptr;
 }
 
 Graphics::~Graphics() {
 	if (window != nullptr) {
 		glfwDestroyWindow(window);
 		window = nullptr;
-	}
-
-	if (mouse_data != nullptr) {
-		delete mouse_data;
-		mouse_data = nullptr;
 	}
 	glfwTerminate();
 }
@@ -52,7 +46,6 @@ int Graphics::initializeWindow(int width, int height, const char* title) {
 	}
 	glViewport(0, 0, width, height);
 
-	mouse_data = new MouseData();
 	return 0;
 }
 
@@ -67,7 +60,7 @@ void Graphics::windowUpdate() {
 	if (matchViewportToWindow) {
 		glViewport(0, 0, windowWidth, windowHeight);
 	}
-	mouse_data->update(this);
+	mouse_data.update();
 	glfwSwapInterval(vsyncEnabled ? 1 : 0);
 	glfwSwapBuffers(window);
 	glfwPollEvents();
@@ -93,8 +86,30 @@ MouseData::MouseData() {
 	y = 0;
 }
 
-void MouseData::update(Graphics* g) {
+void MouseData::update() {
+	Graphics* g = Graphics::getInstance();
 	glfwGetCursorPos(g->window, &(x), &(y));
 	screenFull = vec2(x, y) - (vec2(g->windowWidth, g->windowHeight) * 0.5);
 	screenNormalized = (screenFull * 2) / vec2(g->windowWidth, g->windowHeight);
+}
+void MouseData::setRawMouseInput(bool RawMouseInput) {
+	if (RawMouseInput) {
+		glfwSetInputMode(Graphics::getInstance()->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	}
+	else {
+		glfwSetInputMode(Graphics::getInstance()->window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+	}
+}
+bool MouseData::isMouseDown(int button) {
+	return glfwGetMouseButton(Graphics::getInstance()->window, button) == GLFW_PRESS;
+}
+bool MouseData::isRawMouseInput() {
+	return glfwGetInputMode(Graphics::getInstance()->window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED;
+}
+bool KeyboardData::isKeyDown(int key) {
+	return glfwGetKey(Graphics::getInstance()->window, key) == GLFW_PRESS;
+}
+
+KeyboardData::KeyboardData() {
+
 }

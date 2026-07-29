@@ -127,3 +127,16 @@ Instance* ImageResource::clone_this() {
 	loadFromFile(filePath);
 	return i;
 }
+
+int ImageResource::getWidth() {
+	return width;
+}
+int ImageResource::getHeight() {
+	return height;
+}
+int ImageResource::getNumChannels() {
+	return Channels;
+}
+int ImageResource::getImageBufferLength() {
+	return width * height * Channels;
+}
