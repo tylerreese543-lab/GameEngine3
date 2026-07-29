@@ -35,6 +35,7 @@ enum {
 	eSUniform_CameraProjectionMatrix,
 	eSUniform_Material_DiffuseColor,
 	eSUniform_Material_Specularity,
+	eSUniform_CurrentTime,
 	eSUniform_MAX
 };
 

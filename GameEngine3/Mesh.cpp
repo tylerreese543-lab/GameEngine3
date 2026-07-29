@@ -151,6 +151,7 @@ void Mesh::render(Camera* camera) {
 	program->setUniform3f(program->shaderUniformNames[eSUniform_CameraPosition], camera->position);
 	program->setUniformSMat(program->shaderUniformNames[eSUniform_CameraLookMatrix], camera->look, GL_TRUE, 3);
 	program->setUniformSMat(program->shaderUniformNames[eSUniform_CameraProjectionMatrix], camera->projection, GL_TRUE, 4);
+	program->setUniform1f(program->shaderUniformNames[eSUniform_CurrentTime], Graphics::getInstance()->lastFrameTime);
 	g->render();
 	
 }

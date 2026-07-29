@@ -83,6 +83,7 @@ ShaderProgram::ShaderProgram() : Resource() {
 	setDefaultShaderUniform(eSUniform_CameraProjectionMatrix,		"c_ProjectionMatrix");
 	setDefaultShaderUniform(eSUniform_Material_DiffuseColor,		"m_DiffuseColor");
 	setDefaultShaderUniform(eSUniform_Material_Specularity,			"m_Specularity");
+	setDefaultShaderUniform(eSUniform_CurrentTime,					"u_CurrentTime");
 
 	setDefaultMaterialTexture(eMaterialTexture_Diffuse,				"t_Diffuse");
 	setDefaultMaterialTexture(eMaterialTexture_AmbientOcclusion,	"t_AmbientOcclusion");

@@ -34,6 +34,8 @@ sol::object LuaResource::InstanceToSolObj(sol::this_state ts, Instance* i) {
 		return sol::make_object(ts, (ImageResource*)i);
 	case InstanceType_Resource:
 		return sol::make_object(ts, (Resource*)i);
+	case InstanceType_Scene:
+		return sol::make_object(ts, (Scene*)i);
 	default:
 		//Base instance class - no casting necessary
 		return sol::make_object(ts, i);
@@ -159,7 +161,17 @@ void LuaResource::InitializeLua() {
 		"Rotation", &Camera::rotation,
 		"MoveDirection2D", &Camera::moveDirection2D
 	);
-
+	auto SceneType = lua.new_usertype<Scene>("Scene",
+		sol::base_classes, sol::bases<Instance>(),
+		"CurrentCamera", sol::property(
+			[](Scene* self, sol::this_state ts) {
+				return InstanceToSolObj(ts, self->getCamera());
+			},
+			[](Scene* self, sol::this_state ts, sol::object value) {
+				self->camera = (value.as<Camera*>()->getId());
+			}
+		)
+	);
 	auto MeshType = lua.new_usertype<Mesh>("Mesh",
 		sol::base_classes, sol::bases<Instance>(),
 		"Position", &Mesh::position,
@@ -223,6 +235,7 @@ void LuaResource::InitializeLua() {
 	ImageResourceType[sol::meta_function::index] =		&LuaResource::__luaIndex;
 	ShaderProgramType[sol::meta_function::index] =		&LuaResource::__luaIndex;
 	ShaderResourceType[sol::meta_function::index] =		&LuaResource::__luaIndex;
+	SceneType[sol::meta_function::index] =				&LuaResource::__luaIndex;
 
 }
 LuaResource::~LuaResource() {
@@ -278,10 +291,11 @@ void LuaResource::loadScript() {
 
 	// 3. ATTACH the environment sandbox directly to the function instance
 	env.set_on(script_func);
-	env["this"] = InstanceToSolObj(sol::this_state(lua), this);
+	env["me"] = InstanceToSolObj(sol::this_state(lua), this);
 	env["MouseData"] = &(Graphics::getInstance()->mouse_data);
 	env["KeyboardData"] = &(Graphics::getInstance()->keyboard_data);
-	env["time"] = &Graphics::getInstance()->lastFrameTime;
+	env["time"] = &glfwGetTime;
+	env["scene"] = InstanceToSolObj(sol::this_state(lua), Scene::getCurrentScene());
 	// 4. EXECUTE the attached function once to register your "Tick" block inside 'env'
 	sol::protected_function_result run_result = script_func();
 

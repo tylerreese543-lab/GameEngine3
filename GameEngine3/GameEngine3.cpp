@@ -58,9 +58,11 @@ int main() {
 	model2->geometry = -1;
 	
 	LuaResource* script = new LuaResource("shader/program.lua");
-	script->setParent(camera);
-	model->setParent(script);
-	model2->setParent(script);
+	script->setParent(resources);
+	model->setParent(scene);
+	model2->setParent(scene);
+	model->name = "Model1";
+	model2->name = "Model2";
 	script->loadScript();
 	//CAMERA - define camera position, planes, and FOV
 	//LOOP
@@ -68,17 +70,16 @@ int main() {
 	while (graphics->shouldOpenWindow()) {
 
 		if ((glfwGetTime() - graphics->lastFrameTime) < (1.0 / (float)graphics->targetFPS)) continue;
-		scene->PreRender();
-		model->rotation = vec3(PI * 0.5f, PI * 0.5f, PI * 0.5f);
+		Scene::getCurrentScene()->PreRender();
 
 		for (auto i : Instance::world) {
 			if (i.second) {
 				i.second->update(graphics->deltaTime);
 			}
 		}
-		scene->RenderScene();
+		Scene::getCurrentScene()->RenderScene();
 	}
 	glfwTerminate();
-	scene->destroy();
+	Scene::getCurrentScene()->destroy();
 	return 0;
 }
