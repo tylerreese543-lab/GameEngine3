@@ -23,6 +23,6 @@ public:
 	void setPlanes(float near, float far);
 	float fovGL();
 	Camera();
-	Camera(float x, float y, float z);
+	Camera(vec3);
 };
 

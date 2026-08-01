@@ -23,6 +23,7 @@ const std::string Instance::instanceTypeNames[Instance::InstanceType_Count] = {
 	"FloatValue",
 	"StringValue",
 	"InstanceValue",
+	"Vector3Value"
 };
 Instance::Instance() {
 	instanceId = 0;
@@ -94,6 +95,15 @@ int Instance::setParent(Instance* p) {
 Instance* Instance::getChildFromName(const std::string& name) {
 	for (Instance* child : children) {
 		if (child->name == name) {
+			return child;
+		}
+	}
+	//printf("ERROR: Child with name '%s' not found.\n", name.c_str());
+	return nullptr; // Child not found
+}
+Instance* Instance::getChildFromClass(const std::string& className) {
+	for (Instance* child : children) {
+		if (child->getInstanceNameFromType(child->type) == className) {
 			return child;
 		}
 	}

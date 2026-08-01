@@ -12,8 +12,9 @@ Camera::Camera() : Instance() {
 	fov = 90;
 }
 
-Camera::Camera(float x, float y, float z) : Camera() {
-	setPosition(x, y, z);
+
+Camera::Camera(vec3 v) : Camera() {
+	setPosition(v.X, v.Y, v.Z);
 }
 void Camera::updateMatrices() {
 	setMat4Row(projection.m[0],

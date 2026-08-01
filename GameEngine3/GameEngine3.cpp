@@ -17,13 +17,14 @@ int main() {
 
 	LuaResource::InitializeLua();
 
-	Camera* camera = new Camera(0, 0, -2);
+	Camera* camera = new Camera(vec3(0, 0, -2));
 	camera->fov = 70.0f;
 	scene->addChild(camera);
 
 
 	Instance* resources = new Instance();
 	resources->name = "Resources";
+	resources->setParent(scene);
 
 	//SHADERS - load from file, parent to shader program and create;
 	ShaderProgram* sprog = new ShaderProgram("shader/vertex_shader.glsl", "shader/fragment_shader.glsl");
@@ -48,25 +49,19 @@ int main() {
 	//GEOMETRY - load model from file
 	Geometry* mesh = new Geometry();
 	mesh->loadFromFile("shader/suz_lodetail.fbx");
+	mesh->setParent(resources);
 	Mesh* model = new Mesh();
-	model->material = material->getId();
-	mesh->setParent(model);
+	model->addChild(material);
+	model->geometry = mesh->getId();
 	model->setPosition(vec3(-1, 0, 5));
-	Mesh* model2 = (Mesh*)model->clone();
-	model2->addChild(material2);
-	model2->material = -1;
-	model2->geometry = -1;
 	
 	LuaResource* script = new LuaResource("shader/program.lua");
 	script->setParent(resources);
 	model->setParent(scene);
-	model2->setParent(scene);
 	model->name = "Model1";
-	model2->name = "Model2";
 	script->loadScript();
 	//CAMERA - define camera position, planes, and FOV
 	//LOOP
-
 	while (graphics->shouldOpenWindow()) {
 
 		if ((glfwGetTime() - graphics->lastFrameTime) < (1.0 / (float)graphics->targetFPS)) continue;

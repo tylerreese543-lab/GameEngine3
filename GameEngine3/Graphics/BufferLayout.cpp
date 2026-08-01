@@ -3,22 +3,26 @@ BufferLayoutElement::BufferLayoutElement(GLenum type, GLuint count) {
 	this->type = type;
 	this->count = count;
 	this->normalized = GL_FALSE;
+	this->binding = 0;
 }
 
 BufferLayoutElement::BufferLayoutElement(GLuint count) {
 	this->type = GL_FLOAT;
 	this->count = count;
 	this->normalized = GL_FALSE;
+	this->binding = 0;
 }
 BufferLayoutElement::BufferLayoutElement() {
 	this->type = GL_FLOAT;
 	this->count = 1;
 	this->normalized = GL_FALSE;
+	this->binding = 0;
 }
 BufferLayoutElement::BufferLayoutElement(GLenum type, GLuint count, GLboolean normalized) {
 	this->type = type;
 	this->count = count;
 	this->normalized = normalized;
+	this->binding = 0;
 }
 GLuint BufferLayout::getStride(int binding) {
 	GLuint stride = 0;

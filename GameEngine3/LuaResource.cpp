@@ -49,19 +49,29 @@ sol::object LuaResource::InstanceToSolObj(sol::this_state ts, Instance* i) {
 		return sol::make_object(ts, (FloatValue*)i);
 	case InstanceType_InstanceValue:
 		return sol::make_object(ts, (InstanceValue*)i);
+	case InstanceType_Vector3Value:
+		return sol::make_object(ts, (Vector3Value*)i);
 	default:
 		//Base instance class - no casting necessary
 		return sol::make_object(ts, i);
 	}
 }
 void LuaResource::InitializeLua() {
-	lua.open_libraries(sol::lib::base);
+	lua.open_libraries(sol::lib::base, sol::lib::math);
 
 	sol::table enumRoot = lua.create_named_table("Enum");
 	enumRoot.new_enum("KeyCode",
 		"Q", GLFW_KEY_Q,
 		"W", GLFW_KEY_W,
 		"E", GLFW_KEY_E,
+		"R", GLFW_KEY_R,
+		"T", GLFW_KEY_T,
+		"Y", GLFW_KEY_Y,
+		"U", GLFW_KEY_U,
+		"I", GLFW_KEY_I,
+		"O", GLFW_KEY_O,
+		"P", GLFW_KEY_P,
+
 		"A", GLFW_KEY_A,
 		"S", GLFW_KEY_S,
 		"D", GLFW_KEY_D,
@@ -71,16 +81,52 @@ void LuaResource::InitializeLua() {
 		"J", GLFW_KEY_J,
 		"K", GLFW_KEY_K,
 		"L", GLFW_KEY_L,
+
+		"M", GLFW_KEY_M,
+		"N", GLFW_KEY_N,
+		"B", GLFW_KEY_B,
+		"V", GLFW_KEY_V,
+		"C", GLFW_KEY_C,
+		"X", GLFW_KEY_X,
+		"Z", GLFW_KEY_Z,
+
 		"Up", GLFW_KEY_UP,
 		"Down", GLFW_KEY_DOWN,
 		"Left", GLFW_KEY_LEFT,
 		"Right", GLFW_KEY_RIGHT,
-		"Spacebar", GLFW_KEY_SPACE
+
+		"Spacebar", GLFW_KEY_SPACE,
+		"LeftShift", GLFW_KEY_LEFT_SHIFT,
+		"RightShift", GLFW_KEY_RIGHT_SHIFT,
+		"LeftAlt", GLFW_KEY_LEFT_ALT,
+		"RightAlt", GLFW_KEY_RIGHT_ALT,
+		"LeftControl", GLFW_KEY_LEFT_CONTROL,
+		"RightControl", GLFW_KEY_LEFT_CONTROL
 	);
 	enumRoot.new_enum("MouseButton",
 		"Left", GLFW_MOUSE_BUTTON_LEFT,
 		"Right", GLFW_MOUSE_BUTTON_RIGHT,
 		"Middle", GLFW_MOUSE_BUTTON_MIDDLE
+	);
+
+	enumRoot.new_enum("GamepadButton",
+		"ACross", GLFW_GAMEPAD_BUTTON_A,
+		"BCircle", GLFW_GAMEPAD_BUTTON_B,
+		"XSquare", GLFW_GAMEPAD_BUTTON_X,
+		"YTriangle", GLFW_GAMEPAD_BUTTON_Y,
+
+		"DPadLeft", GLFW_GAMEPAD_BUTTON_DPAD_LEFT,
+		"DPadRight", GLFW_GAMEPAD_BUTTON_DPAD_RIGHT,
+		"DPadUp", GLFW_GAMEPAD_BUTTON_DPAD_UP,
+		"DPadDown", GLFW_GAMEPAD_BUTTON_DPAD_DOWN,
+
+		"HatLeft", GLFW_GAMEPAD_BUTTON_LEFT_THUMB,
+		"HatRight", GLFW_GAMEPAD_BUTTON_RIGHT_THUMB,
+		"BumperLeft", GLFW_GAMEPAD_BUTTON_LEFT_BUMPER,
+		"BumperRight", GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER,
+
+		"Start", GLFW_GAMEPAD_BUTTON_START,
+		"Back", GLFW_GAMEPAD_BUTTON_BACK
 	);
 
 	enumRoot.new_enum("ShaderType",
@@ -120,14 +166,57 @@ void LuaResource::InitializeLua() {
 		"Y", &vec2::Y
 	);
 
+	lua.new_usertype<ScriptEvent>("ScriptEvent",
+		"Connect", &ScriptEvent::connect
+	);
 	lua.new_usertype<MouseData>("MouseData",
 		"Position", sol::readonly(&MouseData::screenFull),
 		"SetMouseInputMode", &MouseData::setRawMouseInput,
 		"IsMouseDown", &MouseData::isMouseDown,
-		"IsRawMouseInput", &MouseData::isRawMouseInput
+		"IsRawMouseInput", &MouseData::isRawMouseInput,
+		"OnLeftClick", &MouseData::on_left_click,
+		"OnLeftRelease", &MouseData::on_left_release,
+		"OnRightClick", &MouseData::on_right_click,
+		"OnRightRelease", &MouseData::on_right_release
+	);
+	lua.new_usertype<Gamepad>("Gamepad",
+		"LeftJoystick", sol::property(
+			[](Gamepad* self, sol::this_state ts) {
+				return self->getJoystickLocation(0);
+			}
+		),
+		"RightJoystick", sol::property(
+			[](Gamepad* self, sol::this_state ts) {
+				return self->getJoystickLocation(1);
+			}
+		),
+		"LeftTrigger", sol::property(
+			[](Gamepad* self, sol::this_state ts) {
+				return self->getTriggerPress(1);
+			}
+		),
+		"RightTrigger", sol::property(
+			[](Gamepad* self, sol::this_state ts) {
+				return self->getTriggerPress(1);
+			}
+		),
+		"Dpad", sol::property(
+			[](Gamepad* self, sol::this_state ts) {
+				return self->getDPadVector();
+			}
+		),
+		"IsButtonDown", &Gamepad::isButtonPressed
+	);
+
+	lua.new_usertype<GamepadData>("GamepadData",
+		"Get", &GamepadData::getGamepad,
+		"OnConnect", &GamepadData::on_connect,
+		"OnDisconnect", &GamepadData::on_disconnect
 	);
 	lua.new_usertype<KeyboardData>("KeyboardData",
-		"IsKeyDown", &KeyboardData::isKeyDown
+		"IsKeyDown", &KeyboardData::isKeyDown,
+		"OnKeyDown", &KeyboardData::on_key_down,
+		"OnKeyUp", &KeyboardData::on_key_up
 	);
 	// Register the GameInstance usertype
   //TODO: eventually abstract this to only have access to ID
@@ -135,7 +224,7 @@ void LuaResource::InitializeLua() {
 		// Expose variables
 		"Name", &Instance::name,
 		"ID", sol::property(&Instance::getId),
-		"Type", sol::property([](Instance* self, sol::this_state ts) {
+		"ClassName", sol::property([](Instance* self, sol::this_state ts) {
 				if (self) {
 					return getInstanceNameFromType(self->type);
 				}
@@ -151,14 +240,28 @@ void LuaResource::InitializeLua() {
 				self->setParent(value.as<Instance*>());
 			}
 		),
-    "FindFirstChild", [](Instance* self, sol::this_state ts, const std::string& name) -> sol::object {
-        if (!self) return sol::make_object(ts, sol::nil);
-        Instance* child = self->getChildFromName(name);
-        if (!child) return sol::make_object(ts, sol::nil);
-        // Convert to the correct derived userdata before returning
-        return InstanceToSolObj(ts, child);
-    }
-		);
+		"FindFirstChild", [](Instance* self, sol::this_state ts, const std::string& name) -> sol::object {
+			if (!self) return sol::make_object(ts, sol::nil);
+			Instance* child = self->getChildFromName(name);
+			if (!child) return sol::make_object(ts, sol::nil);
+			// Convert to the correct derived userdata before returning
+			return InstanceToSolObj(ts, child);
+		},
+		"FindFirstChildOfClass", [](Instance* self, sol::this_state ts, const std::string& className) -> sol::object {
+			if (!self) return sol::make_object(ts, sol::nil);
+			Instance* child = self->getChildFromClass(className);
+			if (!child) return sol::make_object(ts, sol::nil);
+			// Convert to the correct derived userdata before returning
+			return InstanceToSolObj(ts, child);
+		},
+		"GetChildren", [](Instance* self, sol::this_state ts) {
+			return SolTableFromIV(ts, &(self->children));
+		},
+		"Clone", [](Instance* self, sol::this_state ts) {
+			Instance* clone = self->clone();
+			return InstanceToSolObj(ts, clone);
+		}
+	);
 	
 	auto ResourceType = lua.new_usertype<Resource>("Resource",
 		sol::base_classes, sol::bases<Instance>()
@@ -169,6 +272,12 @@ void LuaResource::InitializeLua() {
 	);
 	auto CameraType = lua.new_usertype<Camera>("Camera",
 		sol::base_classes, sol::bases<Instance>(),
+		"new", sol::factories([](sol::this_state ts) {
+			return InstanceToSolObj(ts, new Camera());
+		},
+		[](sol::this_state ts, vec3 v) {
+			return InstanceToSolObj(ts, new Camera(v));
+		}),
 		"FOV", &Camera::fov,
 		"Position", &Camera::position,
 		"Rotation", &Camera::rotation,
@@ -187,6 +296,7 @@ void LuaResource::InitializeLua() {
 	);
 	auto MeshType = lua.new_usertype<Mesh>("Mesh",
 		sol::base_classes, sol::bases<Instance>(),
+		"new", sol::constructors<Mesh()>(),
 		"Position", &Mesh::position,
 		"Visible", &Mesh::visible,
 		"Rotation", &Mesh::rotation,
@@ -204,6 +314,9 @@ void LuaResource::InitializeLua() {
 
 	auto MaterialType = lua.new_usertype<Material>("Material",
 		sol::base_classes, sol::bases<Instance>(),
+		"new", sol::factories([](sol::this_state ts) {
+			return InstanceToSolObj(ts, new Material());
+		}),
 		"Color", &Material::diffuseColor,
 		"Specularity", &Material::specularity,
 		"Shader", sol::property(
@@ -222,7 +335,8 @@ void LuaResource::InitializeLua() {
 		}
 	);
 	auto ShaderProgramType = lua.new_usertype<ShaderProgram>("ShaderProgram",
-		sol::base_classes, sol::bases<Resource, Instance>()
+		sol::base_classes, sol::bases<Resource, Instance>(),
+		"Create", &ShaderProgram::createProgram
 	);
 
 	auto ShaderResourceType = lua.new_usertype<ShaderResource>("ShaderResource",
@@ -236,7 +350,9 @@ void LuaResource::InitializeLua() {
 		"Width", &ImageResource::getWidth,
 		"Height", &ImageResource::getHeight,
 		"Channels", &ImageResource::getNumChannels,
-		"Size", &ImageResource::getImageBufferLength
+		"Size", &ImageResource::getImageBufferLength,
+		"Target", &ImageResource::textureType,
+		"LoadFromFile", &ImageResource::loadFromFile
 	);
 
 	auto ValueType = lua.new_usertype<Value>("ValueBase",
@@ -246,24 +362,46 @@ void LuaResource::InitializeLua() {
 	//values :( at least they work...
 	auto IntValueType = lua.new_usertype<IntegerValue>("IntValue",
 		sol::base_classes, sol::bases<Value, Instance>(),
+		"new", sol::factories([](sol::this_state ts) {
+			return InstanceToSolObj(ts, new IntegerValue());
+		}),
 		"Value", &IntegerValue::value
 	);
 
 	auto FloatValueType = lua.new_usertype<FloatValue>("FloatValue",
 		sol::base_classes, sol::bases<Value, Instance>(),
+		"new", sol::factories([](sol::this_state ts) {
+			return InstanceToSolObj(ts, new FloatValue());
+		}),
 		"Value", &FloatValue::value
 	);
 
 	auto StringValueType = lua.new_usertype<StringValue>("StringValue",
 		sol::base_classes, sol::bases<Value, Instance>(),
+		"new", sol::factories([](sol::this_state ts) {
+			return InstanceToSolObj(ts, new StringValue());
+		}),
 		"Value", &StringValue::value
 	);
-	auto BooleanValueType = lua.new_usertype<StringValue>("BoolValue",
+	auto BooleanValueType = lua.new_usertype<BooleanValue>("BoolValue",
 		sol::base_classes, sol::bases<Value, Instance>(),
+		"new", sol::factories([](sol::this_state ts) {
+			return InstanceToSolObj(ts, new BooleanValue());
+		}),
 		"Value", &BooleanValue::value
 	);
-	auto InstanceValueType = lua.new_usertype<InstanceValue>("Reference",
+	auto Vector3ValueType = lua.new_usertype<Vector3Value>("Vector3Value",
 		sol::base_classes, sol::bases<Value, Instance>(),
+		"new", sol::factories([](sol::this_state ts) {
+			return InstanceToSolObj(ts, new Vector3Value());
+		}),
+		"Value", &Vector3Value::value
+	);
+	auto InstanceValueType = lua.new_usertype<InstanceValue>("InstanceValue",
+		sol::base_classes, sol::bases<Value, Instance>(),
+		"new", sol::factories([](sol::this_state ts) {
+			return InstanceToSolObj(ts, new InstanceValue());
+		}),
 		"Value", sol::property(
 			[](InstanceValue* self, sol::this_state ts) {
 				return InstanceToSolObj(ts, self->get());
@@ -290,7 +428,7 @@ void LuaResource::InitializeLua() {
 	StringValueType[sol::meta_function::index] =		&LuaResource::__luaIndex;
 	BooleanValueType[sol::meta_function::index] =		&LuaResource::__luaIndex;
 	InstanceValueType[sol::meta_function::index] =		&LuaResource::__luaIndex;
-
+	Vector3ValueType[sol::meta_function::index] =		&LuaResource::__luaIndex;
 }
 LuaResource::~LuaResource() {
 
@@ -348,6 +486,7 @@ void LuaResource::loadScript() {
 	env["me"] = InstanceToSolObj(sol::this_state(lua), this);
 	env["MouseData"] = &(Graphics::getInstance()->mouse_data);
 	env["KeyboardData"] = &(Graphics::getInstance()->keyboard_data);
+	env["GamepadData"] = &(Graphics::getInstance()->gamepad_data);
 	env["time"] = &glfwGetTime;
 	env["scene"] = InstanceToSolObj(sol::this_state(lua), Scene::getCurrentScene());
 	// 4. EXECUTE the attached function once to register your "Tick" block inside 'env'
@@ -380,4 +519,13 @@ void LuaResource::update(float dt) {
 		printf("LuaRuntimeError: %s\n", err.what());
 	}
 
+}
+
+sol::table LuaResource::SolTableFromIV(sol::this_state ts, std::vector<Instance*>* instances) {
+	sol::table objects = lua.create_table();
+	for (Instance*& i : *instances) {
+		objects.add(InstanceToSolObj(ts, i));
+	}
+
+	return objects;
 }

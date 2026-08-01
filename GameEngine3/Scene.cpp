@@ -14,7 +14,7 @@ Scene::Scene() : Instance() {
 void Scene::PreRender() {
 	Graphics* g = Graphics::getInstance();
 	g->clearWindow();
-
+	g->gamepad_data.UpdateGamepads();
 	if (!isIdValid(camera)) {
 		camera = getChildIdFromType(InstanceType_Camera);
 	}

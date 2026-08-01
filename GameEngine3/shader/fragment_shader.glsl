@@ -9,5 +9,5 @@ uniform sampler2D t_Diffuse;
 uniform sampler2D t_AmbientOcclusion;
 uniform vec3 m_DiffuseColor;
 void main() {
-	color = vec4(m_DiffuseColor * texture(t_AmbientOcclusion, out_texCoord).rrr, 1.0);
+	color = vec4(m_DiffuseColor * texture(t_AmbientOcclusion, out_texCoord).rrr + 0.2 * out_texCoord.rgr, 1.0);
 }

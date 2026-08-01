@@ -1,16 +1,14 @@
 #pragma once
 #include "GameInstance.h"
 #include "Resource.h"
-#include <any>
-#define SOL_ALL_SAFETIES_ON 1
-#include <sol/sol.hpp>
+#include "ScriptEvent.h"
 
 class LuaResource : public Resource {
 public:
-
 	static sol::state lua;
 	static void InitializeLua();
 	static sol::object InstanceToSolObj(sol::this_state ts, Instance* i);
+	static sol::table SolTableFromIV(sol::this_state ts, std::vector<Instance*>* instances);
 	LuaResource(std::string filepath = "");
 	~LuaResource();
 	

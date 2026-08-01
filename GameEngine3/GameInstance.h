@@ -32,6 +32,7 @@ public:
 		InstanceType_FloatValue,
 		InstanceType_StringValue,
 		InstanceType_InstanceValue,
+		InstanceType_Vector3Value,
 		InstanceType_Count
 	};
 	static const std::string instanceTypeNames[InstanceType_Count];
@@ -55,6 +56,7 @@ public:
 	virtual Instance* getChildFromId(int id);
 	virtual Instance* getChildFromIndex(int index);
 	virtual Instance* getChildFromType(int type);
+	virtual Instance* getChildFromClass(const std::string& className);
 	virtual void update(float deltaTime);
 	virtual int getChildIdFromType(int type);
 

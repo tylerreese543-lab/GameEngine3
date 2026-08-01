@@ -57,3 +57,11 @@ Instance* FloatValue::clone_this() {
 	return registerInstance(new FloatValue(*this), true);
 }
 
+Vector3Value::Vector3Value() : Value() {
+	type = InstanceType_Vector3Value;
+	value = vec3(0, 0, 0);
+}
+
+Instance* Vector3Value::clone_this() {
+	return registerInstance(new Vector3Value(*this), true);
+}
