@@ -48,7 +48,7 @@ int main() {
 	material2->diffuseColor = vec3(0.9, 0.6, 0.4);
 	//GEOMETRY - load model from file
 	Geometry* mesh = new Geometry();
-	mesh->loadFromFile("shader/suz_lodetail.fbx");
+	mesh->loadFromFile("shader/Cube.fbx");
 	mesh->setParent(resources);
 	Mesh* model = new Mesh();
 	model->addChild(material);

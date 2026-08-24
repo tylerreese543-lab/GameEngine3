@@ -1,0 +1,123 @@
+#include "AABB.h"
+
+AABB2D::AABB2D() {
+	min = vec2(0.0f, 0.0f);
+	max = vec2(0.0f, 0.0f);
+}
+
+AABB2D::AABB2D(const vec2& min, const vec2& max) {
+	this->min = min;
+	this->max = max;
+}
+
+bool AABB2D::intersects(const AABB2D& other) const {
+	return (min.X <= other.max.X && max.X >= other.min.X) &&
+		(min.Y <= other.max.Y && max.Y >= other.min.Y);
+}
+
+bool AABB2D::contains(const vec2& point) const {
+	printf("Checking if point (%f, %f) is inside AABB2D with min (%f, %f) and max (%f, %f)\n", point.X, point.Y, min.X, min.Y, max.X, max.Y);
+	return (point.X >= min.X && point.X <= max.X) &&
+		(point.Y >= min.Y && point.Y <= max.Y);
+}
+
+AABB3D::AABB3D() {
+	min = vec3(0.0f, 0.0f, 0.0f);
+	max = vec3(0.0f, 0.0f, 0.0f);
+}
+
+AABB3D::AABB3D(const vec3& min, const vec3& max) {
+	this->min = min;
+	this->max = max;
+}
+
+bool AABB3D::intersects(const AABB3D& other) const {
+	return (min.X <= other.max.X && max.X >= other.min.X) &&
+		(min.Y <= other.max.Y && max.Y >= other.min.Y) &&
+		(min.Z <= other.max.Z && max.Z >= other.min.Z);
+}
+
+bool AABB3D::contains(const vec3& point) const {
+	return (point.X >= min.X && point.X <= max.X) &&
+		(point.Y >= min.Y && point.Y <= max.Y) &&
+		(point.Z >= min.Z && point.Z <= max.Z);
+}
+
+Collision2D::Collision2D() : Instance() {
+
+	name = "AABBCollider2D";
+	type = InstanceType_Collision2D;
+
+	position = vec2(0.0f, 0.0f);
+	size = vec2(1.0f, 1.0f);
+	boundingBox = AABB2D(position, position + size);
+}
+
+bool Collision2D::checkCollision(Collision2D* other) const {
+	return boundingBox.intersects(other->boundingBox);
+}
+
+void Collision2D::setPosition(const vec2& pos) {
+	position = pos;
+	boundingBox = AABB2D(position, position + size);
+}
+
+void Collision2D::setSize(const vec2& newSize) {
+	size = newSize;
+	boundingBox = AABB2D(position, position + size);
+}
+
+vec2 Collision2D::getPosition() const {
+	return position;
+}
+
+vec2 Collision2D::getSize() const {
+	return size;
+}
+
+vec2 Collision2D::getCenter() const {
+	return (position) + size * 0.5f;
+}
+
+Collision3D::Collision3D() : Instance()
+{
+	name = "AABBCollider3D";
+	type = InstanceType_Collision3D;
+	position = vec3(0.0f, 0.0f, 0.0f);
+	size = vec3(1.0f, 1.0f, 1.0f);
+	boundingBox = AABB3D(position, position + size);
+}
+
+bool Collision3D::checkCollision(Collision3D* other) const {
+	return boundingBox.intersects(other->boundingBox);
+}
+
+void Collision3D::setPosition(const vec3& pos) {
+	position = pos;
+	boundingBox = AABB3D(position, position + size);
+}
+
+void Collision3D::setSize(const vec3& newSize) {
+	size = newSize;
+	boundingBox = AABB3D(position, position + size);
+}
+
+vec3 Collision3D::getPosition() const {
+	return position;
+}
+
+vec3 Collision3D::getSize() const {
+	return size;
+}
+
+vec3 Collision3D::getCenter() const {
+	return (position) + size * 0.5f;
+}
+bool Collision2D::isInside(vec2 point) const {
+	return boundingBox.contains(point);
+}
+
+bool Collision3D::isInside(vec3 point) const {
+	return boundingBox.contains(point);
+}
+

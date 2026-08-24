@@ -5,6 +5,7 @@ local jumpable = false;
 
 local model1 = scene:FindFirstChild("Model1")
 model1.Position = Vector3.new(2.0, 2.0, 0.0)
+
 local camera = scene.CurrentCamera;
 MouseData:SetMouseInputMode(true);
 
@@ -25,6 +26,11 @@ for i = 1, 10, 1 do
 end
 local g = GamepadData:Get(0);
 local useController = g ~= nil;
+
+local box = Collision3D.new();
+box.Position = Vector3.new(0, 0, 0);
+box.Size = Vector3.new(3, 1, 3);
+
 function Tick(deltaTime)
 	
 
@@ -34,6 +40,11 @@ function Tick(deltaTime)
 		MouseData:SetMouseInputMode(true);
 	end
 	
+	if box:IsInside(camera.Position) then
+		model1.Materiala.Color = Vector3.new(1, 0, 0);
+	else
+		model1.Materiala.Color = Vector3.new(0, 1, 0);
+	end
 	if (KeyboardData:IsKeyDown(Enum.KeyCode.LeftShift)) then
 		speed = 0.2
 	else

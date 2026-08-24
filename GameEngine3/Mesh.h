@@ -31,7 +31,6 @@ public:
 	virtual void loadFromFile(std::string filepath, int meshID = 0, int ImporterFlags = aiProcess_Triangulate);
 
 };
-
 class Mesh : public Instance {
 	//Finds the geometry based on this Mesh's children.
 	virtual void calcTransform();

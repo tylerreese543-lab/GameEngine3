@@ -6,6 +6,7 @@
 #include "Material.h"
 #include "Shader.h"
 #include "Value.h"
+#include "AABB.h"
 sol::state LuaResource::lua;
 LuaResource::LuaResource(std::string filepath) : Resource() {
 	name = "Script";
@@ -18,6 +19,9 @@ LuaResource::LuaResource(std::string filepath) : Resource() {
 }
 
 sol::object LuaResource::InstanceToSolObj(sol::this_state ts, Instance* i) {
+	if (!i) {
+		return sol::make_object(ts, nullptr);
+	}
 	switch (i->type) {
 	case InstanceType_LuaResource:
 		return sol::make_object(ts, (LuaResource*)i);
@@ -51,6 +55,10 @@ sol::object LuaResource::InstanceToSolObj(sol::this_state ts, Instance* i) {
 		return sol::make_object(ts, (InstanceValue*)i);
 	case InstanceType_Vector3Value:
 		return sol::make_object(ts, (Vector3Value*)i);
+	case InstanceType_Collision2D:
+		return sol::make_object(ts, (Collision2D*)i);
+	case InstanceType_Collision3D:
+		return sol::make_object(ts, (Collision3D*)i);
 	default:
 		//Base instance class - no casting necessary
 		return sol::make_object(ts, i);
@@ -411,6 +419,86 @@ void LuaResource::InitializeLua() {
 			}
 		)
 	);
+
+	auto Collision2DType = lua.new_usertype<Collision2D>("Collision2D",
+		sol::base_classes, sol::bases<Instance>(),
+		"new", sol::factories([](sol::this_state ts) {
+			return InstanceToSolObj(ts, new Collision2D());
+		}),
+		"Position", sol::property(
+			[](Collision2D* self, sol::this_state ts) {
+				return self->getPosition();
+			},
+			[](Collision2D* self, sol::this_state ts, vec2 pos) {
+				self->setPosition(pos);
+			}
+		),
+
+		"Size", sol::property(
+			[](Collision2D* self, sol::this_state ts) {
+				return self->getSize();
+			},
+			[](Collision2D* self, sol::this_state ts, vec2 size) {
+				self->setSize(size);
+			}
+		),
+
+		"Center", sol::property(
+			[](Collision2D* self, sol::this_state ts) {
+				return self->getCenter();
+			}
+		),
+
+		"IsTouching", [](Collision2D* self, sol::this_state ts, Collision2D* other) {
+			return self->checkCollision(other);
+		},
+
+		"IsInside", [](Collision2D* self, sol::this_state ts, vec2 point) {
+			return self->isInside(point);
+		}
+	);
+
+	auto Collision3DType = lua.new_usertype<Collision3D>("Collision3D",
+		sol::base_classes, sol::bases<Instance>(),
+		"new", sol::factories([](sol::this_state ts) {
+			return InstanceToSolObj(ts, new Collision3D());
+		}),
+		"Position", sol::property(
+			[](Collision3D* self, sol::this_state ts) {
+				return self->getPosition();
+			},
+			[](Collision3D* self, sol::this_state ts, vec3 pos) {
+				self->setPosition(pos);
+			}
+		),
+
+		"Size", sol::property(
+			[](Collision3D* self, sol::this_state ts) {
+				return self->getSize();
+			},
+			[](Collision3D* self, sol::this_state ts, vec3 size) {
+				self->setSize(size);
+			}
+		),
+
+		"Center", sol::property(
+			[](Collision3D* self, sol::this_state ts) {
+				return self->getCenter();
+			}
+		),
+
+		"IsTouching", [](Collision3D* self, sol::this_state ts, Collision3D* other) {
+			return self->checkCollision(other);
+		},
+
+		"IsInside", [](Collision3D* self, sol::this_state ts, vec3 point) {
+			return self->isInside(point);
+		}
+	);
+
+
+
+
 	//This freaking blows, but it works i guess
 	InstanceType[sol::meta_function::index] =			&LuaResource::__luaIndex;
 	ResourceType[sol::meta_function::index] =			&LuaResource::__luaIndex;
@@ -429,6 +517,8 @@ void LuaResource::InitializeLua() {
 	BooleanValueType[sol::meta_function::index] =		&LuaResource::__luaIndex;
 	InstanceValueType[sol::meta_function::index] =		&LuaResource::__luaIndex;
 	Vector3ValueType[sol::meta_function::index] =		&LuaResource::__luaIndex;
+	Collision2DType[sol::meta_function::index] =		&LuaResource::__luaIndex;
+	Collision3DType[sol::meta_function::index] =		&LuaResource::__luaIndex;
 }
 LuaResource::~LuaResource() {
 

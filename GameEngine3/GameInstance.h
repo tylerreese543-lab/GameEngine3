@@ -33,6 +33,8 @@ public:
 		InstanceType_StringValue,
 		InstanceType_InstanceValue,
 		InstanceType_Vector3Value,
+		InstanceType_Collision2D,
+		InstanceType_Collision3D,
 		InstanceType_Count
 	};
 	static const std::string instanceTypeNames[InstanceType_Count];
