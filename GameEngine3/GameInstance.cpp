@@ -3,6 +3,24 @@
 int Instance::currentinstanceID = 0;
 std::unordered_map<int, Instance*> Instance::world;
 
+std::unordered_map<unsigned int, ClassHierarchyNode> ClassHierarchyNode::classHierarchyMap;
+ClassHierarchyNode::ClassHierarchyNode(std::initializer_list<unsigned int> classes) {
+	myClasses.insert(classes);
+}
+ClassHierarchyNode::ClassHierarchyNode() {
+
+}
+bool ClassHierarchyNode::isInstanceOf(unsigned int classId, unsigned int targetId) {
+	//TODO: implement
+	return true;
+}
+void ClassHierarchyNode::registerHierarchy() {
+	classHierarchyMap[Instance::InstanceType_Base] = {
+		Instance::InstanceType_Camera,
+		Instance::InstanceType_RenderObject,
+		Instance::InstanceType_Resource,
+	};
+}
 const std::string Instance::instanceTypeNames[Instance::InstanceType_Count] = {
 	"Undefined",
 	"Instance",
@@ -23,7 +41,10 @@ const std::string Instance::instanceTypeNames[Instance::InstanceType_Count] = {
 	"FloatValue",
 	"StringValue",
 	"InstanceValue",
-	"Vector3Value"
+	"Vector3Value",
+	"AABBCollision2D",
+	"AABBCollision3D",
+	"ProceduralGeometry"
 };
 Instance::Instance() {
 	instanceId = 0;

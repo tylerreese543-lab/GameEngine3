@@ -3,7 +3,7 @@ std::set<Mesh*> Mesh::render_objects;
 Geometry::Geometry() : RenderObject() {
 	name = "Geometry";
 	type = InstanceType_Geometry;
-
+	isGeometryInterleaved = false;
 	clearBuffers();
 	setVBOFlags(false, false, false, false, false);
 }
@@ -45,12 +45,28 @@ int Geometry::generateVAO(BufferLayout* layout) {
 			vbos[i].generate();
 		}
 	}
-	return GenVAO(&vao, vbos, &ebo, layout, eVBO_MAX);
+
+	if (ebo.data == nullptr) {
+		return GenVAO(&vao, vbos, nullptr, layout, eVBO_MAX);
+	}
+	else {
+		return GenVAO(&vao, vbos, &ebo, layout, eVBO_MAX);
+	}
 }
 
 void Geometry::render() {
 	if (vao != 0) {
 		DrawVAOElements(vao, GL_UNSIGNED_INT, (int)(ebo.size / ebo.element_size));
+	}
+}
+
+void ProceduralGeometry::render() {
+	if (vao != 0) {
+		if (drawElements) {
+			DrawVAOElements(vao, GL_UNSIGNED_INT, (int)(ebo.size / ebo.element_size));
+		} else {
+			DrawVAOArrays(vao, 0, (int)vertices.size());
+		}
 	}
 }
 
@@ -74,6 +90,21 @@ void Geometry::clearBuffers() {
 	ebo.element_size = getSizeOfType(GL_UNSIGNED_INT);
 	ebo.target = GL_ELEMENT_ARRAY_BUFFER;
 	ebo.usage = GL_STATIC_DRAW;
+	ebo.data = nullptr;
+	ebo.size = 0;
+}
+void ProceduralGeometry::clearBuffers() {
+	for (int i = 0; i < eVBO_MAX; ++i) {
+		vbos[i].data = nullptr;
+		vbos[i].element_size = getSizeOfType(GL_FLOAT);
+		vbos[i].target = GL_ARRAY_BUFFER;
+		vbos[i].usage = bufferUpdateMode;
+		vbos[i].size = 0;
+	}
+
+	ebo.element_size = getSizeOfType(GL_UNSIGNED_INT);
+	ebo.target = GL_ELEMENT_ARRAY_BUFFER;
+	ebo.usage = bufferUpdateMode;
 	ebo.data = nullptr;
 	ebo.size = 0;
 }
@@ -114,6 +145,10 @@ void Mesh::render(Camera* camera) {
 		printf("Finding geometry\n");
 		geometry = getChildIdFromType(InstanceType_Geometry);
 	}
+	if (!isIdValid(geometry)) {
+		printf("Finding procedural geometry\n");
+		geometry = getChildIdFromType(InstanceType_ProceduralGeometry);
+	}
 	if (!isIdValid(material)) {
 		material = getChildIdFromType(InstanceType_Material);
 	}
@@ -143,7 +178,7 @@ void Mesh::render(Camera* camera) {
 	//printf("VAO for ID: %d: %d\n", geometry, g->vao);
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
-	glEnable(GL_CULL_FACE);
+	glDisable(GL_CULL_FACE);
 	glCullFace(GL_FRONT);
 	calcTransform();
 	m->applyMaterial();
@@ -178,6 +213,8 @@ void Geometry::loadFromFile(std::string filepath, int meshID, int ImporterFlags)
 	int sizeNormal = mesh->mNumVertices * 3;
 	int sizeColor = mesh->mNumVertices * 3;
 	int sizeIndices = mesh->mNumFaces * 3;
+
+	//TODO: add interleaved load capabilties
 	if (mesh->HasPositions()) {
 		vbos[eVBO_Positions].data = malloc(sizePos * sizeof(float));
 		vbos[eVBO_Positions].calcSize(sizePos);
@@ -216,6 +253,10 @@ void Geometry::loadFromFile(std::string filepath, int meshID, int ImporterFlags)
 			int_data[(i * 3) + 2] = mesh->mFaces[i].mIndices[2];
 		}
 	}
+
+	if (mesh->HasTangentsAndBitangents()) {
+		//TODO: add support for tangents/bitangents in the import in the extra VBO
+	}
 	/*
 	TODO: Actually expand these dynamically to fit any extra UV / Color data in the mesh file.
 	Gives more creative freedom to developers in shaders
@@ -240,4 +281,249 @@ Instance* Mesh::clone_this() {
 	Mesh* i = new Mesh(*this);
 	render_objects.insert(i);
 	return registerInstance(i, true);
+}
+
+ProceduralGeometry::ProceduralGeometry() : Geometry() {
+	name = "ProceduralGeometry";
+	type = InstanceType_ProceduralGeometry;
+	numExtraFloats = 0;
+	bufferUpdateMode = GL_DYNAMIC_DRAW;
+}
+
+ProceduralGeometry::~ProceduralGeometry() {
+	clearData();
+}
+
+ProceduralVertex::ProceduralVertex(vec3 position, vec3 normal, vec2 uv, vec3 color) {
+	this->position = position;
+	this->normal = normal;
+	this->uv = uv;
+	this->color = color;
+}
+void ProceduralGeometry::addVertex(ProceduralVertex vertex) {
+	vertices.push_back(vertex);
+	if (numExtraFloats > 0) {
+		extraFloatData.push_back((float*)malloc(numExtraFloats * sizeof(float)));
+	}
+	buffersDirty = true;
+}
+
+void ProceduralGeometry::addTriangle(unsigned int a, unsigned int b, unsigned int c) {
+	indices.push_back(ivec3(a, b, c));
+	buffersDirty = true;
+}
+void ProceduralGeometry::clearData(bool onlyFloats) {
+	buffersDirty = true;
+	for (float* data : extraFloatData) {
+		free(data);
+	}
+	extraFloatData.clear();
+	if (onlyFloats) return;
+	vertices.clear();
+	indices.clear();
+}
+
+void ProceduralGeometry::setVertexPosition(int index, vec3 position) {
+	if (index < 0 || index >= vertices.size()) return;
+	vertices[index].position = position;
+
+	if (!isBuffersDirty()) {
+		float* Data = (float*)vbos[eVBO_Positions].data;
+		Data[index * 3 + 0] = position.X;
+		Data[index * 3 + 1] = position.Y;
+		Data[index * 3 + 2] = position.Z;
+		
+		printf("Updating vertex %d position to (%f, %f, %f)\n", index, position.X, position.Y, position.Z);
+		vbos[eVBO_Positions].setDataSub(index * 3 * sizeof(float), 3 * sizeof(float), &Data[index * 3]);
+	}
+	else {
+		printf("Buffers are dirty, not updating vertex %d position to (%f, %f, %f)\n", index, position.X, position.Y, position.Z);
+
+	}
+	//buffersDirty = true;
+}
+
+void ProceduralGeometry::setVertexNormal(int index, vec3 normal) {
+	if (index < 0 || index >= vertices.size()) return;
+	vertices[index].normal = normal;
+
+	if (!isBuffersDirty()) {
+	float* Data = (float*)vbos[eVBO_Normal].data;
+	Data[index * 3 + 0] = normal.X;
+	Data[index * 3 + 1] = normal.Y;
+	Data[index * 3 + 2] = normal.Z;
+
+	vbos[eVBO_Normal].setDataSub(index * 3 * sizeof(float), 3 * sizeof(float), &Data[index * 3]);
+	}
+	//buffersDirty = true;
+}
+
+void ProceduralGeometry::setVertexUV(int index, vec2 uv) {
+	if (index < 0 || index >= vertices.size()) return;
+	vertices[index].uv = uv;
+	
+	/*
+	Dont update the buffers if they are dirty, as that means there is a possibility that
+	the data for this vertex does not exist yet in the VBO
+	*/
+	if (!isBuffersDirty()) {
+		float* Data = (float*)vbos[eVBO_UV].data;
+		Data[index * 2 + 0] = uv.X;
+		Data[index * 2 + 1] = uv.Y;
+
+		vbos[eVBO_UV].setDataSub(index * 2 * sizeof(float), 2 * sizeof(float), &Data[index * 2]);
+	}
+	//buffersDirty = true;
+}
+
+void ProceduralGeometry::setVertexColor(int index, vec3 color) {
+	if (index < 0 || index >= vertices.size()) return;
+	vertices[index].color = color;
+	/*
+	Dont update the buffers if they are dirty, as that means there is a possibility that
+	the data for this vertex does not exist yet in the VBO
+	*/
+	if (!isBuffersDirty()) {
+		float* Data = (float*)vbos[eVBO_Color].data;
+		Data[index * 3 + 0] = color.X;
+		Data[index * 3 + 1] = color.Y;
+		Data[index * 3 + 2] = color.Z;
+	
+		vbos[eVBO_Color].setDataSub(index * 3 * sizeof(float), 3 * sizeof(float), &Data[index * 3]);
+	}
+	//buffersDirty = true;
+}
+
+void ProceduralGeometry::setVertexExtraFloatData(int index, float* data) {
+	if (index < 0 || index >= vertices.size()) return;
+	if (numExtraFloats <= 0) return;
+	memcpy(extraFloatData[index], data, numExtraFloats * sizeof(float));
+
+	if (!isBuffersDirty()) {
+		//Update the VBO with the new data
+		float* Data = (float*)vbos[eVBO_Extra].data;
+		memcpy(Data + (index * numExtraFloats), data, numExtraFloats * sizeof(float));
+
+		vbos[eVBO_Extra].setDataSub(index * numExtraFloats * sizeof(float), numExtraFloats * sizeof(float), &Data[index * numExtraFloats]);
+	}
+	//buffersDirty = true;
+}
+
+bool ProceduralGeometry::isBuffersDirty() {
+	return buffersDirty;
+}
+
+bool ProceduralGeometry::isEmpty() {
+	return vertices.empty() || (drawElements && indices.empty());
+}
+
+void ProceduralGeometry::generateBuffers() {
+
+	if (!isBuffersDirty()) return;
+	if (isEmpty()) return;
+	//Generate VBOs
+
+	clearBuffers(); 
+
+	if (isGeometryInterleaved) {
+
+	}
+	else {
+		vbos[eVBO_Positions].data = malloc(vertices.size() * 3 * sizeof(float));
+		vbos[eVBO_Positions].calcSize(vertices.size() * 3);
+		float* posData = (float*)vbos[eVBO_Positions].data;
+		for (size_t i = 0; i < vertices.size(); ++i) {
+			printf("Setting vertex %zu position: (%f, %f, %f)\n", i, vertices[i].position.X, vertices[i].position.Y, vertices[i].position.Z);
+			posData[i * 3 + 0] = vertices[i].position.X;
+			posData[i * 3 + 1] = vertices[i].position.Y;
+			posData[i * 3 + 2] = vertices[i].position.Z;
+		}
+		vbos[eVBO_Normal].data = malloc(vertices.size() * 3 * sizeof(float));
+		vbos[eVBO_Normal].calcSize(vertices.size() * 3);
+		float* normData = (float*)vbos[eVBO_Normal].data;
+		for (size_t i = 0; i < vertices.size(); ++i) {
+			normData[i * 3 + 0] = vertices[i].normal.X;
+			normData[i * 3 + 1] = vertices[i].normal.Y;
+			normData[i * 3 + 2] = vertices[i].normal.Z;
+		}
+		vbos[eVBO_UV].data = malloc(vertices.size() * 2 * sizeof(float));
+		vbos[eVBO_UV].calcSize(vertices.size() * 2);
+		float* uvData = (float*)vbos[eVBO_UV].data;
+		for (size_t i = 0; i < vertices.size(); ++i) {
+			uvData[i * 2 + 0] = vertices[i].uv.X;
+			uvData[i * 2 + 1] = vertices[i].uv.Y;
+		}
+		vbos[eVBO_Color].data = malloc(vertices.size() * 3 * sizeof(float));
+		vbos[eVBO_Color].calcSize(vertices.size() * 3);
+		float* colorData = (float*)vbos[eVBO_Color].data;
+		for (size_t i = 0; i < vertices.size(); ++i) {
+			colorData[i * 3 + 0] = vertices[i].color.X;
+			colorData[i * 3 + 1] = vertices[i].color.Y;
+			colorData[i * 3 + 2] = vertices[i].color.Z;
+		}
+
+		for (size_t i = 0; i < extraFloatData.size(); ++i) {
+			vbos[eVBO_Extra].data = malloc(vertices.size() * numExtraFloats * sizeof(float));
+			vbos[eVBO_Extra].calcSize(vertices.size() * numExtraFloats);
+			float* extraData = (float*)vbos[eVBO_Extra].data;
+			memcpy(extraData + (i * numExtraFloats), extraFloatData[i], numExtraFloats * sizeof(float));
+		}
+
+		//Generate EBO
+
+		if (drawElements && !indices.empty()) {
+			ebo.data = malloc(indices.size() * 3 * sizeof(unsigned int));
+			ebo.calcSize(indices.size() * 3);
+			for (size_t i = 0; i < indices.size(); ++i) {
+				unsigned int* indexData = (unsigned int*)ebo.data;
+				indexData[i * 3 + 0] = indices[i].X;
+				indexData[i * 3 + 1] = indices[i].Y;
+				indexData[i * 3 + 2] = indices[i].Z;
+			}
+		}
+	}
+
+	buffersDirty = false;
+}
+
+void ProceduralGeometry::setNumExtraFloats(int num) {
+	if (num < 0 or num >= MAX_EXTRA_FLOATS) return;
+	numExtraFloats = num;
+}
+
+Instance* ProceduralGeometry::clone_this() {
+	ProceduralGeometry* g = (ProceduralGeometry*)registerInstance(new ProceduralGeometry(*this), true);
+	g->vao = 0;
+	g->clearBuffers();
+	g->clearData(true);
+	g->vertices = vertices;
+	g->setNumExtraFloats(numExtraFloats);
+	g->indices = indices;
+	memcpy(g->vboFlags, vboFlags, eVBO_MAX);
+	for (int i = 0; i < eVBO_Extra; ++i) {
+		g->vbos[i].size = vbos[i].size;
+		g->vbos[i].target = vbos[i].target;
+		g->vbos[i].usage = vbos[i].usage;
+		g->vbos[i].element_size = vbos[i].element_size;
+		if (vbos[i].data != nullptr) {
+			g->vbos[i].data = malloc(vbos[i].size);
+			memcpy(g->vbos[i].data, vbos[i].data, vbos[i].size);
+		}
+	}
+	if (ebo.data != nullptr) {
+		g->ebo.size = ebo.size;
+		g->ebo.target = ebo.target;
+		g->ebo.usage = ebo.usage;
+		g->ebo.element_size = ebo.element_size;
+		g->ebo.data = malloc(ebo.size);
+		memcpy(g->ebo.data, ebo.data, ebo.size);
+	}
+	return g;
+}
+
+int ProceduralGeometry::generateVAO(BufferLayout* bufferLayout) {
+	printf("Generating VAO for ProceduralGeometry '%s' with %zu vertices and %zu indices.\n", name.c_str(), vertices.size(), indices.size());
+	generateBuffers();
+
+	return Geometry::generateVAO(bufferLayout);
 }

@@ -100,5 +100,5 @@ void BufferLayout::applyEX(Buffer* vbos, int numVBO) {
 
 	}
 
-	printf("Str: %d, size: %d\n", getStride(), (int)elements.size());
+	//printf("Str: %d, size: %d\n", getStride(), (int)elements.size());
 }

@@ -47,12 +47,12 @@ int main() {
 	material2->autoPrepare(true);
 	material2->diffuseColor = vec3(0.9, 0.6, 0.4);
 	//GEOMETRY - load model from file
-	Geometry* mesh = new Geometry();
-	mesh->loadFromFile("shader/Cube.fbx");
-	mesh->setParent(resources);
+
+	Geometry* proceduralGeometry = new Geometry();
+	proceduralGeometry->loadFromFile("shader/Cube.fbx");
 	Mesh* model = new Mesh();
 	model->addChild(material);
-	model->geometry = mesh->getId();
+	model->geometry = proceduralGeometry->getId();
 	model->setPosition(vec3(-1, 0, 5));
 	
 	LuaResource* script = new LuaResource("shader/program.lua");
@@ -66,7 +66,7 @@ int main() {
 
 		if ((glfwGetTime() - graphics->lastFrameTime) < (1.0 / (float)graphics->targetFPS)) continue;
 		Scene::getCurrentScene()->PreRender();
-
+;
 		for (auto i : Instance::world) {
 			if (i.second) {
 				i.second->update(graphics->deltaTime);

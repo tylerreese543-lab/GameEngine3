@@ -52,6 +52,13 @@ int Buffer::setData(GLsizeiptr size, GLenum usage) {
 	return 0;
 }
 
+int Buffer::setDataSub(GLintptr offset, GLsizeiptr size, const void* data) {
+	bind();
+	glBufferSubData(target, offset, size, data);
+	unbind();
+	return 0;
+}
+
 int Buffer::update() {
 	glBufferData(target, size, data, usage);
 	return 0;

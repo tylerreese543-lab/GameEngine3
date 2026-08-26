@@ -121,3 +121,16 @@ bool Collision3D::isInside(vec3 point) const {
 	return boundingBox.contains(point);
 }
 
+Instance* Collision2D::clone_this() {
+	Collision2D* newCollider = (Collision2D*)registerInstance(new Collision2D(), true);
+	newCollider->setPosition(this->getPosition());
+	newCollider->setSize(this->getSize());
+	return newCollider;
+}
+
+Instance* Collision3D::clone_this() {
+	Collision3D* newCollider = (Collision3D*)registerInstance(new Collision3D(), true);
+	newCollider->setPosition(this->getPosition());
+	newCollider->setSize(this->getSize());
+	return newCollider;
+}

@@ -3,6 +3,18 @@
 #include <vector>
 #include <unordered_map>
 #include <set>
+
+class ClassHierarchyNode {
+	std::set<unsigned int> myClasses;
+
+	static std::unordered_map<unsigned int, ClassHierarchyNode> classHierarchyMap;
+	public:
+		ClassHierarchyNode();
+		ClassHierarchyNode(std::initializer_list<unsigned int> classes);
+		bool isInstanceOf(unsigned int classId, unsigned int targetClassId);
+		static void registerHierarchy();
+	
+};
 class Instance {
 	static int currentinstanceID;
 public:
@@ -35,6 +47,7 @@ public:
 		InstanceType_Vector3Value,
 		InstanceType_Collision2D,
 		InstanceType_Collision3D,
+		InstanceType_ProceduralGeometry,
 		InstanceType_Count
 	};
 	static const std::string instanceTypeNames[InstanceType_Count];

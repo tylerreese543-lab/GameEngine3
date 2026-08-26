@@ -59,6 +59,8 @@ sol::object LuaResource::InstanceToSolObj(sol::this_state ts, Instance* i) {
 		return sol::make_object(ts, (Collision2D*)i);
 	case InstanceType_Collision3D:
 		return sol::make_object(ts, (Collision3D*)i);
+	case InstanceType_ProceduralGeometry:
+		return sol::make_object(ts, (ProceduralGeometry*)i);
 	default:
 		//Base instance class - no casting necessary
 		return sol::make_object(ts, i);
@@ -140,6 +142,19 @@ void LuaResource::InitializeLua() {
 	enumRoot.new_enum("ShaderType",
 		"Vertex", GL_VERTEX_SHADER,
 		"Fragment", GL_FRAGMENT_SHADER
+	);
+
+	enumRoot.new_enum("BufferUpdateMode",
+		"Static", GL_STATIC_DRAW,
+		"Dynamic", GL_DYNAMIC_DRAW,
+		"Stream", GL_STREAM_DRAW
+	);
+	enumRoot.new_enum("PolygonDrawType",
+		"Triangles", GL_TRIANGLES,
+		"Lines", GL_LINES,
+		"TriangleFan", GL_TRIANGLE_FAN,
+		"TriangleStrip", GL_TRIANGLE_STRIP,
+		"Points", GL_POINTS
 	);
 	lua.new_usertype<mat3>("Matrix3"
 		//Mat3 not accessible to lua yet, placeholder
@@ -302,9 +317,18 @@ void LuaResource::InitializeLua() {
 			}
 		)
 	);
+
+	auto GeometryType = lua.new_usertype<Geometry>("Geometry",
+		sol::base_classes, sol::bases<RenderObject, Instance>(),
+		"new", sol::factories([](sol::this_state ts) {
+			return InstanceToSolObj(ts, new Geometry());
+		})
+	);
 	auto MeshType = lua.new_usertype<Mesh>("Mesh",
 		sol::base_classes, sol::bases<Instance>(),
-		"new", sol::constructors<Mesh()>(),
+		"new", sol::factories([](sol::this_state ts) {
+			return InstanceToSolObj(ts, new Mesh());
+		}),
 		"Position", &Mesh::position,
 		"Visible", &Mesh::visible,
 		"Rotation", &Mesh::rotation,
@@ -315,7 +339,15 @@ void LuaResource::InitializeLua() {
 				return InstanceToSolObj(ts, getInstanceById(self->material));
 			},
 			[](Mesh* self, sol::this_state ts, sol::object value) {
-				self->material = value.as<Material*>()->getId();
+				self->material = value.as<Instance*>()->getId();
+			}
+		),
+		"Geometry", sol::property(
+			[](Mesh* self, sol::this_state ts) {
+				return InstanceToSolObj(ts, getInstanceById(self->geometry));
+			},
+			[](Mesh* self, sol::this_state ts, sol::object value) {
+				self->geometry = value.as<Instance*>()->getId();
 			}
 		)
 	);
@@ -496,7 +528,37 @@ void LuaResource::InitializeLua() {
 		}
 	);
 
+	auto ProceduralGeometryType = lua.new_usertype<ProceduralGeometry>("ProceduralGeometry",
+		sol::base_classes, sol::bases<Geometry, RenderObject, Instance>(),
+		"new", sol::factories([](sol::this_state ts) {
+			return InstanceToSolObj(ts, new ProceduralGeometry());
+			}),
+		"AddVertex", [](ProceduralGeometry* self, sol::this_state ts, sol::optional<vec3> position, sol::optional<vec2> uv, sol::optional<vec3> normal, sol::optional<vec3> color) {
 
+			self->addVertex(ProceduralVertex(
+				position.value_or(vec3()),
+				normal.value_or(vec3()),
+				uv.value_or(vec2()),
+				color.value_or(vec3())
+			));
+		},
+		"Dirty", sol::property(&ProceduralGeometry::isBuffersDirty),
+		"Empty", sol::property(&ProceduralGeometry::isEmpty),
+		"AddTriangle", &ProceduralGeometry::addTriangle,
+		"SetVertexPosition", &ProceduralGeometry::setVertexPosition,
+		"SetVertexUV", &ProceduralGeometry::setVertexUV,
+		"SetVertexNormal", &ProceduralGeometry::setVertexNormal,
+		"SetVertexColor", &ProceduralGeometry::setVertexColor,
+
+		"SetVertexFloatData", [](ProceduralGeometry* self, sol::this_state ts, int index, std::vector<float> data) {
+			self->setVertexExtraFloatData(index, data.data());
+		},
+
+		"SetNumExtraFloats", &ProceduralGeometry::setNumExtraFloats,
+
+		"BufferUpdateMode", &ProceduralGeometry::bufferUpdateMode,
+		"IsDrawElements", &ProceduralGeometry::drawElements
+		);
 
 
 	//This freaking blows, but it works i guess
@@ -519,6 +581,8 @@ void LuaResource::InitializeLua() {
 	Vector3ValueType[sol::meta_function::index] =		&LuaResource::__luaIndex;
 	Collision2DType[sol::meta_function::index] =		&LuaResource::__luaIndex;
 	Collision3DType[sol::meta_function::index] =		&LuaResource::__luaIndex;
+	ProceduralGeometryType[sol::meta_function::index] =	&LuaResource::__luaIndex;
+	GeometryType[sol::meta_function::index] =			&LuaResource::__luaIndex;
 }
 LuaResource::~LuaResource() {
 

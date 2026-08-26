@@ -31,6 +31,18 @@ local box = Collision3D.new();
 box.Position = Vector3.new(0, 0, 0);
 box.Size = Vector3.new(3, 1, 3);
 
+local procG = ProceduralGeometry.new();
+procG.Name = "ProcGeom";
+procG:AddVertex(Vector3.new(0, 0, 0));
+procG:AddVertex(Vector3.new(1, 0, 0));
+procG:AddVertex(Vector3.new(0, 5, 0));
+procG.IsDrawElements = false;
+procG:AddVertex(Vector3.new(0, 0, 1));
+procG:AddVertex(Vector3.new(1, 0, 1));
+procG:AddVertex(Vector3.new(0, 5, 1));
+procG.Parent = scene;
+
+model1.Geometry = procG;
 function Tick(deltaTime)
 	
 
@@ -91,8 +103,8 @@ function Tick(deltaTime)
 	end
 
 	for i, v in pairs(value:GetChildren()) do
-		local b = v:FindFirstChild("Value");
-		b.Value = b.Value + deltaTime * 2;
-		v.Position = Vector3.new(10 * math.cos(b.Value), 0, 10 * math.sin(b.Value));
+		local baa = v:FindFirstChild("Value");
+		baa.Value = baa.Value + deltaTime * 2;
+		v.Position = Vector3.new(10 * math.cos(baa.Value), 0, 10 * math.sin(baa.Value));
 	end
 end

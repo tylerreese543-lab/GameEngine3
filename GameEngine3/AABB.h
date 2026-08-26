@@ -32,6 +32,7 @@ class Collision3D : public Instance
 	vec3 size;
 	AABB3D boundingBox;
 public:
+	virtual Instance* clone_this();
 	bool checkCollision(Collision3D* other) const;
 	bool isInside(vec3 point) const;
 	void setPosition(const vec3& pos);
@@ -50,6 +51,8 @@ class Collision2D : public Instance
 	vec2 size;
 	AABB2D boundingBox;
 public:
+
+	virtual Instance* clone_this();
 	bool checkCollision(Collision2D* other) const;
 	bool isInside(vec2 point) const;
 	void setPosition(const vec2& pos);

@@ -19,3 +19,10 @@ int DrawVAOElements(GLuint vao, GLenum type, GLint count) {
 	glBindVertexArray(0);
 	return 0;
 }
+
+int DrawVAOArrays(GLuint vao, GLint first, GLint count) {
+	glBindVertexArray(vao);
+	glDrawArrays(GL_TRIANGLES, first, count);
+	glBindVertexArray(0);
+	return 0;
+}
