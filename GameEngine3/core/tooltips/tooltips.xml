@@ -1,0 +1,62 @@
+<root>
+	<tooltip id="IDS_TOOLTIP_INSTANCE">
+		<text>The base class for all objects in the game.</text>
+	</tooltip>
+	<tooltip id="IDS_TOOLTIP_CAMERA">
+		<text>A viewpoint for the scene.</text>
+	</tooltip>
+	<tooltip id="IDS_TOOLTIP_GEOMETRY_RESOURCE">
+		<text>A resource representing geometric data that can be rendered when attached to a Mesh object.</text>
+	</tooltip>
+	<tooltip id="IDS_TOOLTIP_PROCEDURAL_GEOMETRY_RESOURCE">
+		<text>A resource representing procedurally generated geometric data that can be rendered when attached to a Mesh object.</text>
+	</tooltip>
+	<tooltip id="IDS_TOOLTIP_MESH">
+		<text>An object composed of geometry and material that can be rendered in the scene.</text>
+	</tooltip>
+	<tooltip id="IDS_TOOLTIP_MATERIAL">
+		<text>A resource defining the appearance of an object, including its color, texture, and shading properties.</text>
+	</tooltip>
+	<tooltip id="IDS_TOOLTIP_SHADER_RESOURCE">
+		<text>A resource defining the behavior of the GPU when rendering an object, including how it processes vertices, fragments, and other graphical data.</text>
+	</tooltip>
+	<tooltip id="IDS_TOOLTIP_SCRIPT">
+		<text>A resource defining a set of instructions that can be executed to control the behavior of objects in the game.</text>
+	</tooltip>
+	<tooltip id="IDS_TOOLTIP_VALUE_BASE">
+		<text>An abstract base class for value types in the game engine.</text>
+	</tooltip>
+	<tooltip id="IDS_TOOLTIP_IMAGE_RESOURCE">
+		<text>A resource representing an image that can be used as a texture or for other purposes in the game engine.</text>
+	</tooltip>
+
+	<tooltip id="IDS_IATTR_POSITION">
+		<text>The position of an object in the game world.</text>
+	</tooltip>
+	<tooltip id="IDS_IATTR_SCALE">
+		<text>The scale of an object in the game world.</text>
+	</tooltip>
+	<tooltip id="IDS_IATTR_ROTATION">
+		<text>The rotation of an object in the game world.</text>
+	</tooltip>
+
+	<tooltip id="IDS_IATTR_NAME">
+		<text>The name of an object in the game world.</text>
+	</tooltip>
+	<tooltip id="IDS_IATTR_IID">
+		<text>The unique ID of an object in the game world.</text>
+	</tooltip>
+	<tooltip id="IDS_IATTR_CLASSNAME">
+		<text>The class name of an object in the game world.</text>
+	</tooltip>
+
+	<tooltip id="IDS_IATTR_GEOMETRY">
+		<text>The geometry that a Mesh object uses for rendering.</text>
+	</tooltip>
+	<tooltip id="IDS_IATTR_MATERIAL">
+		<text>The material that a Mesh object uses for rendering.</text>
+	</tooltip>
+	<tooltip id="IDS_IATTR_FILEPATH">
+		<text>The file path of a resource in the game world.</text>
+	</tooltip>
+</root>

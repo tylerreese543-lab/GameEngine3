@@ -9,9 +9,11 @@
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
-class Geometry : public RenderObject {
+class Geometry : public Resource {
 private:
 public:
+
+	GLuint vao;
 	virtual void clearBuffers();
 	Buffer vbos[eVBO_MAX];
 	//Whether the geometry contains multiple attributes in a single buffer or is stored separately in multiple;
@@ -30,6 +32,8 @@ public:
 	//genTangentsToExtra will generate the tangent/bi-tangent and place them in the extra VBO.
 	void loadFromFile(std::string filepath, int meshID = 0, int ImporterFlags = aiProcess_Triangulate);
 
+	virtual int saveInstanceToFile(FILE* file);
+	virtual int loadInstanceFromFile(void* data, int offset = 0);
 };
 
 class ProceduralVertex {
@@ -44,7 +48,7 @@ public:
 class ProceduralGeometry : public Geometry {
 	std::vector<ProceduralVertex> vertices;
 	std::vector<float*> extraFloatData;
-	std::vector<ivec3> indices;
+	std::vector<int> indices;
 	bool buffersDirty;
 	int numExtraFloats;
 
@@ -79,6 +83,9 @@ public:
 	virtual void generateBuffers();
 
 	virtual void render();
+
+	virtual int saveInstanceToFile(FILE* file);
+	virtual int loadInstanceFromFile(void* data, int offset = 0);
 };
 
 class Mesh : public Instance {
@@ -107,4 +114,7 @@ public:
 	virtual int destroy();
 
 	virtual Instance* clone_this();
+
+	virtual int saveInstanceToFile(FILE* file);
+	virtual int loadInstanceFromFile(void* data, int offset = 0);
 };

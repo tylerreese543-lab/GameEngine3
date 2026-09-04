@@ -137,6 +137,7 @@
   <ItemGroup>
     <ClInclude Include="AABB.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="EngineGUI.h" />
     <ClInclude Include="GameInstance.h" />
     <ClInclude Include="Graphics\Buffer.h" />
     <ClInclude Include="Graphics\BufferLayout.h" />
@@ -157,8 +158,17 @@
     <ClInclude Include="Value.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\dependencies\IMGUI\imgui.cpp" />
+    <ClCompile Include="..\dependencies\IMGUI\imgui_draw.cpp" />
+    <ClCompile Include="..\dependencies\IMGUI\imgui_impl_glfw.cpp" />
+    <ClCompile Include="..\dependencies\IMGUI\imgui_impl_opengl3.cpp" />
+    <ClCompile Include="..\dependencies\IMGUI\imgui_stdlib.cpp" />
+    <ClCompile Include="..\dependencies\IMGUI\imgui_tables.cpp" />
+    <ClCompile Include="..\dependencies\IMGUI\imgui_widgets.cpp" />
+    <ClCompile Include="..\dependencies\PUGIXML\pugixml.cpp" />
     <ClCompile Include="AABB.cpp" />
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="EngineGUI.cpp" />
     <ClCompile Include="GameEngine3.cpp" />
     <ClCompile Include="GameInstance.cpp" />
     <ClCompile Include="Graphics\Buffer.cpp" />

@@ -13,7 +13,6 @@ public:
 	GLuint id;
 	GLenum shaderType;
 	char* source;
-	std::string filePath;
 	int compileResult;
 	bool compiled;
 	int loadFromFile(const char* filepath);
@@ -24,6 +23,11 @@ public:
 	ShaderResource(GLenum type);
 	ShaderResource(GLenum type, const char* source);
 
+	virtual Instance* clone_this();
+
+	virtual ~ShaderResource();
+	virtual int saveInstanceToFile(FILE* file);
+	virtual int loadInstanceFromFile(void* data, int offset = 0);
 };//aBus was here
 
 class ShaderProgram : public Resource {
@@ -46,7 +50,8 @@ public:
 	void setDefaultShaderUniform(int index, std::string name);
 	void setDefaultMaterialTexture(int index, std::string name);
 	//Uniform
-	void bindTexture(std::string uniform, ImageResource* tex);
+	void bindTexture(std::string uniform, ImageResource* tex, int type = -1);
+	void unbindTexture(std::string uniform, int type);
 	void setUniform1f(std::string uniform, float f0);
 	void setUniform2f(std::string uniform, float f0, float f1);
 	void setUniform2f(std::string uniform, vec2 v);
@@ -58,4 +63,7 @@ public:
 	~ShaderProgram();
 	ShaderProgram();
 	ShaderProgram(std::string vs, std::string fs);
+
+	virtual int saveInstanceToFile(FILE* file);
+	virtual int loadInstanceFromFile(void* data, int offset = 0);
 };

@@ -1,25 +1,49 @@
 #include "GameInstance.h"
 
 int Instance::currentinstanceID = 0;
-std::unordered_map<int, Instance*> Instance::world;
+std::map<int, Instance*> Instance::world;
+std::set<Instance*> Instance::destroyQueue;
+std::map<unsigned int, unsigned int> Instance::instanceHierarchyMap;
+void Instance::registerHierarchy() {
+	instanceHierarchyMap = {
+		{-1, -1},
+	{InstanceType_Undefined, -1},
+	{InstanceType_Base, -1},
+	{InstanceType_RenderObject, InstanceType_Base},
+	{InstanceType_Resource, InstanceType_Base},
+	{InstanceType_ShaderProgram, InstanceType_Base},
+	{InstanceType_Camera, InstanceType_Base},
+	{InstanceType_Mesh, InstanceType_Base},
+	{InstanceType_Scene, InstanceType_Base},
+	{InstanceType_Material, InstanceType_Base},
+	{InstanceType_Geometry, InstanceType_Resource},
+	{InstanceType_LuaResource, InstanceType_Resource},
+	{InstanceType_ShaderResource, InstanceType_Resource},
+	{InstanceType_ImageResource, InstanceType_Resource},
+	{InstanceType_Value, InstanceType_Base},
 
-std::unordered_map<unsigned int, ClassHierarchyNode> ClassHierarchyNode::classHierarchyMap;
-ClassHierarchyNode::ClassHierarchyNode(std::initializer_list<unsigned int> classes) {
-	myClasses.insert(classes);
-}
-ClassHierarchyNode::ClassHierarchyNode() {
+	{InstanceType_IntegerValue, InstanceType_Value},
+	{InstanceType_BooleanValue, InstanceType_Value},
+	{InstanceType_FloatValue, InstanceType_Value},
+	{InstanceType_StringValue, InstanceType_Value},
+	{InstanceType_InstanceValue, InstanceType_Value},
+	{InstanceType_Vector3Value, InstanceType_Value},
 
-}
-bool ClassHierarchyNode::isInstanceOf(unsigned int classId, unsigned int targetId) {
-	//TODO: implement
-	return true;
-}
-void ClassHierarchyNode::registerHierarchy() {
-	classHierarchyMap[Instance::InstanceType_Base] = {
-		Instance::InstanceType_Camera,
-		Instance::InstanceType_RenderObject,
-		Instance::InstanceType_Resource,
+	{InstanceType_Collision2D, InstanceType_Base},
+	{InstanceType_Collision3D, InstanceType_Base},
+	{ InstanceType_ProceduralGeometry, InstanceType_Geometry}
 	};
+}
+
+bool Instance::isInstanceOf(unsigned int classId, unsigned int targetId) {
+	if (classId == -1) {
+		return false;
+	}
+	return classId == targetId || isInstanceOf(instanceHierarchyMap[classId], targetId);
+}
+
+int Instance::getTypeTooltip() {
+	return IDS_TOOLTIP_INSTANCE;
 }
 const std::string Instance::instanceTypeNames[Instance::InstanceType_Count] = {
 	"Undefined",
@@ -70,13 +94,13 @@ Instance* Instance::clone() {
 		child->clone()->setParent(i);
 	}
 
+	i->setParent(parent);
 	return i;
 }
 int Instance::destroy() {
 	for (Instance* child : children) {
 		child->destroy();
 	}
-	
 	world[instanceId] = nullptr;
 	instanceId = -1;
 	delete this;
@@ -88,16 +112,16 @@ int Instance::addChild(Instance* child) {
 	if (child == nullptr) {
 		return -1; // Invalid child
 	}
-	if (child->parent != this && child->parent != nullptr) {
-		child->parent->children.erase(std::remove(child->parent->children.begin(), child->parent->children.end(), this), child->parent->children.end());
+	if (child->parent != nullptr) {
+		child->parent->children.erase(child);
+	}
+
+	if (child->children.count(this) > 0) {
+		child->children.erase(this);
+		child->parent->addChild(this);
 	}
 	// Check if the child is already in the children vector
-	for (Instance* c : children) {
-		if (c == child) {
-			return 0; // Child already exists
-		}
-	}
-	children.push_back(child);
+	children.insert(child);
 	child->parent = this;
 	return 0;
 }
@@ -105,9 +129,6 @@ int Instance::addChild(Instance* child) {
 int Instance::setParent(Instance* p) {
 	if (p == nullptr) {
 		return -1; // Invalid parent
-	}
-	if (parent == p) {
-		return 0; // Already has the same parent
 	}
 	p->addChild(this);
 	return 0;
@@ -160,11 +181,12 @@ Instance* Instance::getChildFromId(int id) {
 }
 
 Instance* Instance::getChildFromIndex(int index) {
+		return nullptr; //Deprecated
 	if (index < 0 || index >= children.size()) {
 		printf("ERROR: Invalid child index '%d'.\n", index);
 		return nullptr; // Index out of bounds
 	}
-	return children[index];
+	return nullptr;
 }
 
 std::string Instance::getInstanceNameFromType(int type) {
@@ -174,17 +196,8 @@ std::string Instance::getInstanceNameFromType(int type) {
 	return instanceTypeNames[type];
 }
 
-int Instance::save(FILE* file) {
-	fwrite(&type, sizeof(int), 1, file);
-	fwrite(&instanceId, sizeof(int), 1, file);
-	size_t nameLength = name.size();
-	fwrite(&nameLength, sizeof(size_t), 1, file);
-	fwrite(name.c_str(), sizeof(char), nameLength, file);
-	return 0; //TODO: return the size of the data written to the file
-}
-
-int Instance::load(void* data) {
-	int o = 0;
+int Instance::loadInstanceFromFile(void* data, int off) {
+	int o = off;
 	type = *(int*)offset(data, o);
 	o += sizeof(int);
 	instanceId = *(int*)offset(data, o);
@@ -195,7 +208,7 @@ int Instance::load(void* data) {
 	name = std::string(nameData, nameLength);
 	o += nameLength * sizeof(char);
 
-	return o;
+	return o - off;
 }
 
 void* offset(void* ptr, size_t offset) {
@@ -240,4 +253,27 @@ void Instance::listChildren() {
 	}
 }
 
-void Instance::update(float deltaTime) {}
+void Instance::update(float deltaTime, bool isStudio) {}
+
+int Instance::saveInstanceToFile(FILE* file) {
+	int tag = LOAD_INSTANCE_TAG;
+	fwrite(&tag, sizeof(int), 1, file);
+	fwrite(&type, sizeof(int), 1, file);
+	fwrite(&instanceId, sizeof(int), 1, file);
+	fwrite(name.c_str(), sizeof(char), name.size() + 1, file);
+	return 0; //TODO: return the size of the data written to the file, may not be needed however
+}
+
+std::string Instance::getEngineGUIHash() {
+	return name + "###" + std::to_string(getId());
+}
+
+void Instance::handleDestroyQueue() {
+	for (Instance* inst : destroyQueue) {
+
+		destroyQueue.erase(inst);
+		inst->parent->children.erase(inst);
+		inst->destroy();
+
+	}
+};

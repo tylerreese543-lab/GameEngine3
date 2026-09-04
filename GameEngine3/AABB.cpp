@@ -1,5 +1,10 @@
 #include "AABB.h"
 
+#include "Graphics/graphics_include.h"
+#include "Graphics/Buffer.h"
+#include "Graphics/VertexArrayObject.h"
+#include "Scene.h"
+std::set<int> Collision3D::allCollisionBoxes;
 AABB2D::AABB2D() {
 	min = vec2(0.0f, 0.0f);
 	max = vec2(0.0f, 0.0f);
@@ -86,6 +91,7 @@ Collision3D::Collision3D() : Instance()
 	position = vec3(0.0f, 0.0f, 0.0f);
 	size = vec3(1.0f, 1.0f, 1.0f);
 	boundingBox = AABB3D(position, position + size);
+	allCollisionBoxes.insert(getId());
 }
 
 bool Collision3D::checkCollision(Collision3D* other) const {
@@ -133,4 +139,117 @@ Instance* Collision3D::clone_this() {
 	newCollider->setPosition(this->getPosition());
 	newCollider->setSize(this->getSize());
 	return newCollider;
+}
+
+int Collision2D::saveInstanceToFile(FILE* file) {
+	Instance::saveInstanceToFile(file);
+	fwrite(&position, sizeof(vec2), 1, file);
+	fwrite(&size, sizeof(vec2), 1, file);
+	return 0; //TODO: return the size of the data written to the file
+}
+
+int Collision2D::loadInstanceFromFile(void* data, int off) {
+	int o = off;
+	o += Instance::loadInstanceFromFile(data, o); //Load the base instance data first
+	position = *(vec2*)offset(data, o);
+	o += sizeof(vec2);
+	size = *(vec2*)offset(data, o);
+	o += sizeof(vec2);
+	boundingBox = AABB2D(position, position + size);
+	return o - off; // Return the number of bytes read
+}
+
+int Collision3D::saveInstanceToFile(FILE* file) {
+	Instance::saveInstanceToFile(file);
+	fwrite(&position, sizeof(vec3), 1, file);
+	fwrite(&size, sizeof(vec3), 1, file);
+	return 0; //TODO: return the size of the data written to the file
+}
+
+int Collision3D::loadInstanceFromFile(void* data, int off) {
+	int o = off;
+	o += Instance::loadInstanceFromFile(data, o); //Load the base instance data first
+	position = *(vec3*)offset(data, o);
+	o += sizeof(vec3);
+	size = *(vec3*)offset(data, o);
+	o += sizeof(vec3);
+	boundingBox = AABB3D(position, position + size);
+	return o - off; // Return the number of bytes read
+}
+
+void Collision3D::debugRender() {
+	//GL_LINES
+	Buffer vertexBuffer;
+
+	vertexBuffer.data = new vec3[24]{
+		//Back
+		vec3(0, 0, 0),
+		vec3(1, 0, 0),
+
+		vec3(1, 0, 0),
+		vec3(1, 1, 0),
+
+		vec3(1, 1, 0),
+		vec3(0, 1, 0),
+
+		vec3(0, 1, 0),
+		vec3(0, 0, 0),
+
+		//Front
+		vec3(0, 0, 1),
+		vec3(1, 0, 1),
+
+		vec3(1, 0, 1),
+		vec3(1, 1, 1),
+
+		vec3(1, 1, 1),
+		vec3(0, 1, 1),
+
+		vec3(0, 1, 1),
+		vec3(0, 0, 1),
+
+		//Cross
+		vec3(0, 0, 0),
+		vec3(0, 0, 1),
+
+		vec3(1, 0, 0),
+		vec3(1, 0, 1),
+
+		vec3(1, 1, 0),
+		vec3(1, 1, 1),
+
+		vec3(0, 1, 0),
+		vec3(0, 1, 1),
+	};
+
+	vertexBuffer.element_size = sizeof(vec3);
+	vertexBuffer.calcSize(24);
+	unsigned int vao = 0;
+
+	ShaderProgram* program = (ShaderProgram*)getInstanceById(Scene::getCurrentScene()->hitboxShader);
+	program->useProgram();
+	vertexBuffer.generate();
+	GenVAO(&vao, &vertexBuffer, nullptr, &program->layout);
+
+	Camera* camera = Scene::getCurrentScene()->getCamera();
+
+	mat4 transform = mat4::transform(position, size, vec3(0.0));
+	program->setUniformSMat(program->shaderUniformNames[eSUniform_ModelTransformMatrix], transform, GL_TRUE, 4);
+	program->setUniform3f(program->shaderUniformNames[eSUniform_CameraPosition], camera->position);
+	program->setUniformSMat(program->shaderUniformNames[eSUniform_CameraLookMatrix], camera->look, GL_TRUE, 3);
+	program->setUniformSMat(program->shaderUniformNames[eSUniform_CameraProjectionMatrix], camera->projection, GL_TRUE, 4);
+	program->setUniform1f(program->shaderUniformNames[eSUniform_CurrentTime], Graphics::getInstance()->lastFrameTime);
+
+	glBindVertexArray(vao);
+	glDrawArrays(GL_LINES, 0, 24);
+	glBindVertexArray(0);
+	glDeleteVertexArrays(1, &vao);
+
+}
+
+void Collision3D::RenderAllCollisionBoxesDebug() {
+	for (int i : allCollisionBoxes) {
+		printf("Rendering %d\n", i);
+		((Collision3D*)getInstanceById(i))->debugRender();
+	}
 }

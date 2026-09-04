@@ -12,6 +12,7 @@ LuaResource::LuaResource(std::string filepath) : Resource() {
 	name = "Script";
 	type = InstanceType_LuaResource;
 
+	isEngineScript = false;
 	filePath = filepath;
 	source = "";
 	has_tick = false;
@@ -304,7 +305,8 @@ void LuaResource::InitializeLua() {
 		"FOV", &Camera::fov,
 		"Position", &Camera::position,
 		"Rotation", &Camera::rotation,
-		"MoveDirection2D", &Camera::moveDirection2D
+		"MoveDirection2D", &Camera::moveDirection2D,
+		"LookMatrix", &Camera::look
 	);
 	auto SceneType = lua.new_usertype<Scene>("Scene",
 		sol::base_classes, sol::bases<Instance>(),
@@ -319,7 +321,7 @@ void LuaResource::InitializeLua() {
 	);
 
 	auto GeometryType = lua.new_usertype<Geometry>("Geometry",
-		sol::base_classes, sol::bases<RenderObject, Instance>(),
+		sol::base_classes, sol::bases<Resource, Instance>(),
 		"new", sol::factories([](sol::this_state ts) {
 			return InstanceToSolObj(ts, new Geometry());
 		})
@@ -529,7 +531,7 @@ void LuaResource::InitializeLua() {
 	);
 
 	auto ProceduralGeometryType = lua.new_usertype<ProceduralGeometry>("ProceduralGeometry",
-		sol::base_classes, sol::bases<Geometry, RenderObject, Instance>(),
+		sol::base_classes, sol::bases<Geometry, Resource, Instance>(),
 		"new", sol::factories([](sol::this_state ts) {
 			return InstanceToSolObj(ts, new ProceduralGeometry());
 			}),
@@ -608,12 +610,8 @@ void LuaResource::loadFromFile(std::string filepath) {
 	filePath = filepath;
 	if (filePath == "") return;
 
-	FILE* file;
-	fopen_s(&file, filepath.c_str(), "rb");
-	if (!file) {
-		printf("ERROR: Failed to open shader file '%s'.\n", filepath.c_str());
-		return;
-	}
+	FILE* file = openResourceFile(filepath);
+	if (!file) return;
 	fseek(file, 0, SEEK_END);
 	size_t size = ftell(file);
 	fseek(file, 0, SEEK_SET);
@@ -625,6 +623,8 @@ void LuaResource::loadFromFile(std::string filepath) {
 }
 
 void LuaResource::loadScript() {
+	
+	if (Scene::getCurrentScene()->isStudio && !isEngineScript) return;
 	env = sol::environment(lua, sol::create, lua.globals());
 	loaded_script = lua.load(source);
 	if (!loaded_script.valid()) {
@@ -664,22 +664,52 @@ void LuaResource::loadScript() {
 	}
 }
 
-void LuaResource::update(float dt) {
+void LuaResource::update(float dt, bool isStudio) {
 	if (!has_tick) return;
 
-	auto result = tick_function(dt);
-	if (!result.valid()) {
-		sol::error err = result;
-		printf("LuaRuntimeError: %s\n", err.what());
+	if (!isStudio || isEngineScript) {
+		auto result = tick_function(dt);
+		if (!result.valid()) {
+			sol::error err = result;
+			printf("LuaRuntimeError: %s\n", err.what());
+		}
 	}
 
 }
 
-sol::table LuaResource::SolTableFromIV(sol::this_state ts, std::vector<Instance*>* instances) {
+sol::table LuaResource::SolTableFromIV(sol::this_state ts, std::set<Instance*>* instances) {
 	sol::table objects = lua.create_table();
-	for (Instance*& i : *instances) {
+	for (Instance* i : *instances) {
 		objects.add(InstanceToSolObj(ts, i));
 	}
 
 	return objects;
+}
+
+int LuaResource::saveInstanceToFile(FILE* file) {
+	// Save the file path length and the file path string
+	size_t pathLength = filePath.size();
+	fwrite(filePath.c_str(), sizeof(char), pathLength + 1, file);
+	if (strlen(source) > 0) {
+		size_t sourceLength = strlen(source);
+		fwrite(source, sizeof(char), sourceLength + 1, file);
+	}
+	else {
+		fwrite("", sizeof(char), 1, file);
+	}
+
+
+	return 0; // Return 0 to indicate success
+}
+
+int LuaResource::loadInstanceFromFile(void* data, int off) {
+	// Load the file path length and the file path string
+	int o = off;
+	char* path = (char*)offset(data, o);
+	filePath = std::string(path);
+	o += filePath.size() + 1;
+	char* src = (char*)offset(data, o);
+	source = new char[strlen(src) + 1];
+	strcpy_s((char*)source, strlen(src) + 1, src);
+	return 0; // Return 0 to indicate success
 }

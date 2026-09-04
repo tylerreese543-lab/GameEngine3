@@ -1,5 +1,5 @@
 #include "Scene.h"
-
+#include "AABB.h"
 int Scene::currentScene = -1;
 Scene::Scene() : Instance() {
 	name = "Scene";
@@ -24,10 +24,11 @@ void Scene::PreRender() {
 	}
 	c->updateMatrices();
 	c->aspect_ratio = Graphics::getInstance()->getAspectRatio();
+	handleDestroyQueue();
 }
 void Scene::RenderScene() {
 	Mesh::renderAllMeshes((Camera*)getInstanceById(camera));
-	Graphics::getInstance()->windowUpdate();
+	Collision3D::RenderAllCollisionBoxesDebug();
 }
 
 void Scene::setCurrentScene(int scene) {
@@ -67,3 +68,46 @@ Camera* Scene::getCurrentCamera() {
 	}
 	return s->getCamera();
 }
+
+int Scene::saveInstanceToFile(FILE* file) {
+	int offset = 0;
+	offset += Instance::saveInstanceToFile(file);
+	offset += fwrite(&camera, sizeof(int), 1, file);
+	return offset;
+}
+
+int Scene::loadInstanceFromFile(void* data, int off) {
+	int o = off;
+	o += Instance::loadInstanceFromFile(data, o);
+	memcpy(&camera, offset(data, o), sizeof(int));
+	o += sizeof(int);
+	return o - off;
+}
+
+void Scene::WriteGameFileHeader(FILE* file) {
+	fwrite("GE3X", sizeof(char), 4, file);
+	char versionString[128];
+	sprintf_s(versionString, "%d.%d.%d\n", GAME_VERSION_MAJOR, GAME_VERSION_MINOR, GAME_VERSION_PATCH);
+	fwrite(versionString, sizeof(char), strlen(versionString), file);
+	int numInstances = Instance::world.size();
+	fwrite(&numInstances, sizeof(size_t), 1, file);
+	int currentSceneId = Scene::getCurrentScene()->getId();
+	fwrite(&currentSceneId, sizeof(int), 1, file);
+};
+
+int Scene::saveSceneToFile(const char* filename) {
+	FILE* f_main;
+	fopen_s(&f_main, filename, "wb");
+
+	if (!f_main) {
+		printf("Error saving to file: could not open\n");
+		return 1;
+	}
+
+	WriteGameFileHeader(f_main);
+	for (auto pair : Instance::world) {
+		pair.second->saveInstanceToFile(f_main);
+	}
+
+}
+

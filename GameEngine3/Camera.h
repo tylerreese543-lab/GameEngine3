@@ -22,7 +22,13 @@ public:
 	void setPosition(float x, float y, float z);
 	void setPlanes(float near, float far);
 	float fovGL();
+
+	virtual void update(float deltaTime, bool isStudio);
 	Camera();
 	Camera(vec3);
+
+	virtual Instance* clone_this();
+	virtual int saveInstanceToFile(FILE* file);
+	virtual int loadInstanceFromFile(void* data, int offset = 0);
 };
 

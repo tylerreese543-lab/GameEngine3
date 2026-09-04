@@ -9,17 +9,17 @@ private:
 	unsigned char* Data;
 	int imageSizeRaw;
 	int Channels;
-	unsigned int GLTextureID;
 	unsigned int GLTextureSlot;
 	GLenum typeLoadFile;
 	GLenum GLTextureParameters[4];
 
 public:
+	unsigned int GLTextureID;
 	bool loaded;
 	int textureType;
-	std::string filePath;
 
 
+	static const std::string textureTypeNames[5];
 	void loadFromFile(std::string filepath, GLenum fileType = -1);
 	void SetGLLoadParams(GLenum WRAP_U, GLenum WRAP_V, GLenum MIN_FILTER, GLenum MAG_FILTER);
 	void BindSlot(int slot);
@@ -32,4 +32,7 @@ public:
 	int getNumChannels();
 
 	virtual Instance* clone_this();
+
+	virtual int saveInstanceToFile(FILE* file);
+	virtual int loadInstanceFromFile(void* data, int off);
 };

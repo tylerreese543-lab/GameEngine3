@@ -23,12 +23,8 @@ ShaderResource::ShaderResource(GLenum type, const char* source) : ShaderResource
 int ShaderResource::loadFromFile(const char* filepath) {
 	compiled = false;
 	filePath = filepath;
-	FILE* file;
-	fopen_s(&file, filepath, "rb");
-	if (!file) {
-		printf("ERROR: Failed to open shader file '%s'.\n", filepath);
-		return -1;
-	}
+	FILE* file = openResourceFile(filepath);
+	if (!file) return -1;
 	fseek(file, 0, SEEK_END);
 	size_t size = ftell(file);
 	fseek(file, 0, SEEK_SET);
@@ -42,7 +38,16 @@ int ShaderResource::loadFromFile(const char* filepath) {
 
 int ShaderResource::compileShader() {
 	compiled = true;
+
+	if (id != 0) {
+		glDeleteShader(id);
+		id = 0;
+	}
 	id = glCreateShader(shaderType);
+	if (!source) {
+		printf("ERROR: No source code provided for shader '%s'.\n", filePath.c_str());
+		return -1;
+	}
 	glShaderSource(id, 1, &source, nullptr);
 	glCompileShader(id);
 	glGetShaderiv(id, GL_COMPILE_STATUS, &compileResult);
@@ -106,13 +111,6 @@ ShaderProgram::~ShaderProgram() {
 }
 
 int ShaderProgram::attachShader(ShaderResource* shader) {
-	if (!shader->isValid()) {
-		printf("ERROR: Cannot attach invalid shader '%s' to program '%s'.\n", shader->name.c_str(), name.c_str());
-		return -1;
-	}
-	else {
-		printf("Shader '%s' is valid.\n", shader->name.c_str());
-	}
 	glAttachShader(id, shader->id);
 	return 0;
 }
@@ -134,7 +132,13 @@ int ShaderProgram::linkProgram() {
 }
 
 int ShaderProgram::createProgram() {
+
+	if (id != 0) {
+		glDeleteProgram(id);
+		id = 0;
+	}
 	id = glCreateProgram();
+	printf("Creating program...\n");
 	std::vector<ShaderResource*> shaders;
 	for (Instance* child : children) {
 		if (child->type != InstanceType_ShaderResource) {
@@ -144,13 +148,13 @@ int ShaderProgram::createProgram() {
 	}
 
 	for (ShaderResource* shader : shaders) {
-		if (!shader->isCompiled()) shader->compileShader();
+		shader->compileShader();
 		attachShader(shader);
 	}
 	linkProgram();
 	for (ShaderResource* shader : shaders) {
 		glDeleteShader(shader->id);
-		shader->id = -1;
+		shader->id = 0;
 	}
 
 	GLint numActiveAttribs = 0;
@@ -267,13 +271,25 @@ void ShaderProgram::setUniformSMat(std::string uniform, const float* fv, bool tr
 	}
 }
 
-void ShaderProgram::bindTexture(std::string uniform, ImageResource* tex) {
+void ShaderProgram::bindTexture(std::string uniform, ImageResource* tex, int type) {
+	int textureSlot = -1;
+	if (U(uniform) == -1) return;
+	//printf("%s -%d\n", uniform.c_str(), U(uniform));
+	textureSlot = type;
+	if (tex && textureSlot != -1) {
+		if (tex->textureType == type || type == -1) {
+			tex->BindSlot(textureSlot);
+			glUniform1i(U(uniform), textureSlot);
+		}
+	}
+}
+void ShaderProgram::unbindTexture(std::string uniform, int type) {
 	int textureSlot = -1;
 	if (U(uniform) == -1) return;
 	glGetUniformiv(id, U(uniform), &textureSlot);
-	tex->BindSlot(textureSlot);
+	glActiveTexture(GL_TEXTURE0 + type);
+	glBindTexture(GL_TEXTURE_2D, 0);
 }
-
 void ShaderProgram::setDefaultVertexAttribute(int index, std::string name) {
 	if (index >= 0 && index < eVAttribute_MAX) {
 		shaderAttributeNames[index] = name;
@@ -290,4 +306,112 @@ void ShaderProgram::setDefaultMaterialTexture(int index, std::string name) {
 	if (index >= 0 && index < eMaterialTexture_MAX) {
 		shaderTextureNames[index] = name;
 	}
+}
+
+Instance* ShaderResource::clone_this() {
+	ShaderResource* s = (ShaderResource*)registerInstance(new ShaderResource(*this), true);
+	s->id = 0;
+	s->compiled = false;
+	s->compileResult = 0;
+	s->filePath = filePath;
+	if (source != nullptr) {
+		size_t sourceLength = strlen(source);
+		s->source = new char[sourceLength + 1];
+		strcpy_s(s->source, sourceLength + 1, source);
+	}
+	else {
+		s->source = nullptr;
+	}
+	return s;
+}
+
+ShaderResource::~ShaderResource() {
+	if (source != nullptr) {
+		delete[] source;
+		source = nullptr;
+	}
+	if (id != 0) {
+		glDeleteShader(id);
+		id = 0;
+	}
+}
+
+int ShaderResource::saveInstanceToFile(FILE* file) {
+	int offset = 0;
+	offset += Resource::saveInstanceToFile(file);
+	offset += fwrite(&shaderType, sizeof(GLenum), 1, file);
+	offset += fwrite(filePath.data(), filePath.size() + 1, 1, file);
+	offset += fwrite(&compileResult, sizeof(int), 1, file);
+	offset += fwrite(&compiled, sizeof(bool), 1, file);
+	if (source != nullptr) {
+		size_t sourceLength = strlen(source);
+		offset += fwrite(source, sizeof(char), sourceLength + 1, file);
+	}
+	else {
+		char emptySource = '\0';
+		offset += fwrite(&emptySource, sizeof(char), 1, file);
+	}
+	return offset;
+}
+
+int ShaderResource::loadInstanceFromFile(void* data, int off) {
+	int o = off;
+	o += Resource::loadInstanceFromFile(data, o);
+	memcpy(&shaderType, offset(data, o), sizeof(GLenum));
+	o += sizeof(GLenum);
+	char filePathBuffer[256];
+	strcpy_s(filePathBuffer, sizeof(filePathBuffer), (char*)offset(data, o));
+	filePath = std::string(filePathBuffer);
+	o += strlen(filePathBuffer) + 1;
+	memcpy(&compileResult, offset(data, o), sizeof(int));
+	o += sizeof(int);
+	memcpy(&compiled, offset(data, o), sizeof(bool));
+	o += sizeof(bool);
+	if (source != nullptr) {
+		delete[] source;
+		source = nullptr;
+	}
+	size_t sourceLength = strlen((char*)offset(data, o));
+	if (sourceLength > 0) {
+		source = new char[sourceLength + 1];
+		strcpy_s(source, sourceLength + 1, (char*)offset(data, o));
+	}
+	else {
+		source = nullptr;
+	}
+	o += sourceLength + 1;
+	return o - off;
+}
+
+int ShaderProgram::saveInstanceToFile(FILE* file) {
+	int offset = 0;
+	offset += Resource::saveInstanceToFile(file);
+	offset += fwrite(&loadInterleaved, sizeof(bool), 1, file);
+	for(int i = 0; i < eVAttribute_MAX; ++i) {
+		offset += fwrite(shaderAttributeNames[i].data(), shaderAttributeNames[i].size() + 1, 1, file);
+	}
+	for(int i = 0; i < eSUniform_MAX; ++i) {
+		offset += fwrite(shaderUniformNames[i].data(), shaderUniformNames[i].size() + 1, 1, file);
+	}
+	for(int i = 0; i < eMaterialTexture_MAX; ++i) {
+		offset += fwrite(shaderTextureNames[i].data(), shaderTextureNames[i].size() + 1, 1, file);
+	}
+	return offset;
+}
+
+int ShaderProgram::loadInstanceFromFile(void* data, int off) {
+	int o = off;
+	for (int i = 0; i < eVAttribute_MAX; ++i) {
+		shaderAttributeNames[i] = std::string((char*)offset(data, o));
+		o += shaderAttributeNames[i].size() + 1;
+	}
+	for (int i = 0; i < eSUniform_MAX; ++i) {
+		shaderUniformNames[i] = std::string((char*)offset(data, o));
+		o += shaderUniformNames[i].size() + 1;
+	}
+	for (int i = 0; i < eMaterialTexture_MAX; ++i) {
+		shaderTextureNames[i] = std::string((char*)offset(data, o));
+		o += shaderTextureNames[i].size() + 1;
+	}
+	return o - off;
 }

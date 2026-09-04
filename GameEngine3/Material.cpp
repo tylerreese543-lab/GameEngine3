@@ -27,7 +27,7 @@ void Material::SetTextureUseFlags(bool useDiffuse, bool useAmbientOcclusion, boo
 void Material::autoPrepare(bool autoFlags) {
 	for (int i = eMaterialTexture_Diffuse; i < eMaterialTexture_MAX; ++i) {
 		if (textureUseFlags[i] == false && (!autoFlags)) continue;
-		for (Instance*& child : children) {
+		for (Instance* child : children) {
 			ImageResource* img = isImage(child);
 
 			if (!img) continue;
@@ -42,7 +42,7 @@ void Material::autoPrepare(bool autoFlags) {
 
 		}
 	}
-	for (Instance*& child : children) {
+	for (Instance* child : children) {
 		ShaderProgram* shdr = isShader(child);
 		if (!shdr) continue;
 		shader = shdr->getId();
@@ -58,9 +58,10 @@ void Material::applyMaterial() {
 	program->useProgram();
 	for (int i = 0; i < eMaterialTexture_MAX; ++i) {
 		if (textureUseFlags[i] == true) {
+			program->unbindTexture(program->shaderTextureNames[i], i);
 			ImageResource* img = isImage(getInstanceById(textures[i]));
 			if (!img) continue;
-			program->bindTexture(program->shaderTextureNames[i], img);
+			program->bindTexture(program->shaderTextureNames[i], img, i);
 		}
 	}
 
@@ -90,6 +91,14 @@ void Material::setTexture(ImageResource* i) {
 	if (!i) return;
 	textures[i->textureType] = i->getId();
 }
+void Material::setTextureById(int id, int target) {
+	ImageResource* img = isImage(getInstanceById(id));
+
+	if (id == -1 or img) {
+		if (img) target = img->textureType;
+		textures[target] = id;
+	}
+}
 void Material::setShader(ShaderProgram* i) {
 	i = isShader(i);
 	if (!i) return;
@@ -105,4 +114,30 @@ int Material::getTextureInstanceId(int target) {
 }
 Instance* Material::clone_this() {
 	return registerInstance(new Material(*this), true);
+}
+
+int Material::saveInstanceToFile(FILE* file) {
+	Instance::saveInstanceToFile(file);
+	fwrite(&diffuseColor, sizeof(vec3), 1, file);
+	fwrite(&specularity, sizeof(float), 1, file);
+	fwrite(&shader, sizeof(int), 1, file);
+	fwrite(textures, sizeof(int), eMaterialTexture_MAX, file);
+	fwrite(textureUseFlags, sizeof(bool), eMaterialTexture_MAX, file);
+	return 0; //TODO: return the size of the data written to the file
+}
+
+int Material::loadInstanceFromFile(void* data, int off) {
+	int o = off;
+	o += Instance::loadInstanceFromFile(data, o); //Load the base instance data first
+	diffuseColor = *(vec3*)offset(data, o);
+	o += sizeof(vec3);
+	specularity = *(float*)offset(data, o);
+	o += sizeof(float);
+	shader = *(int*)offset(data, o);
+	o += sizeof(int);
+	memcpy(textures, offset(data, o), sizeof(int) * eMaterialTexture_MAX);
+	o += sizeof(int) * eMaterialTexture_MAX;
+	memcpy(textureUseFlags, offset(data, o), sizeof(bool) * eMaterialTexture_MAX);
+	o += sizeof(bool) * eMaterialTexture_MAX;
+	return o - off; // Return the number of bytes read
 }

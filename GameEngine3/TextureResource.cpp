@@ -1,6 +1,14 @@
 #include "TextureResource.h"
 #include "stb_image/stb_image.h"
 #include "Graphics/GraphicsWrapper.h"
+
+const std::string ImageResource::textureTypeNames[] = {
+	"None",
+	"Diffuse",
+	"Ambient Occlusion",
+	"Normal",
+	"Specular"
+};
 ImageResource::ImageResource(int textureType, std::string filepath) : Resource() {
 	name = "Texture";
 	width = 0;
@@ -19,7 +27,12 @@ ImageResource::ImageResource(int textureType, std::string filepath) : Resource()
 }
 void ImageResource::loadFromFile(std::string filepath, GLenum fileType) {
 	filePath = filepath;
-	if (loaded == true || filePath == "") return;
+
+	if (GLTextureID != 0) {
+		glDeleteTextures(1, &GLTextureID);
+		GLTextureID = 0;
+	}
+	if (filePath == "") return;
 	loaded = true;
 
 	//Auto determines the load type depending on arguments passed. Makes code easier to read but also allows complex modification.
@@ -76,7 +89,7 @@ void ImageResource::loadFromFile(std::string filepath, GLenum fileType) {
 		channels = 3;
 		break;
 	}
-	Data = stbi_load(filePath.c_str(), &width, &height, &Channels, channels);
+	Data = stbi_load(resolveFilePath(filePath).c_str(), &width, &height, &Channels, channels);
 	
 	if (!Data) {
 		printf("ERROR: Couldn't load texture: %s", stbi_failure_reason());
@@ -124,6 +137,7 @@ ImageResource::~ImageResource() {
 Instance* ImageResource::clone_this() {
 	ImageResource* i = (ImageResource*)registerInstance(new ImageResource(*this), true);
 	loaded = false;
+	GLTextureID = 0;
 	loadFromFile(filePath);
 	return i;
 }
@@ -139,4 +153,34 @@ int ImageResource::getNumChannels() {
 }
 int ImageResource::getImageBufferLength() {
 	return width * height * Channels;
+}
+
+int ImageResource::saveInstanceToFile(FILE* file) {
+	int offset = Resource::saveInstanceToFile(file);
+
+	offset += fwrite(&width, sizeof(int), 1, file);
+	offset += fwrite(&height , sizeof(int), 1, file);
+	offset += fwrite(&Channels , sizeof(int), 1, file);
+	int imageBufferLength = getImageBufferLength();
+	offset += fwrite(&imageBufferLength, sizeof(int), 1, file);
+	offset += fwrite(&textureType, sizeof(int), 1, file);
+	offset += fwrite(&typeLoadFile, sizeof(GLenum), 1, file);
+	offset += fwrite(&GLTextureParameters, sizeof(GLenum), 4, file);
+	offset += fwrite(filePath.data(), sizeof(char), filePath.size() + 1, file);
+
+	return offset;
+}
+
+int ImageResource::loadInstanceFromFile(void* data, int off) {
+	int o = off;
+	width = *(int*)offset(data, o);
+	o += sizeof(int);
+	height = *(int*)offset(data, o);
+	o += sizeof(int);
+	Channels = *(int*)offset(data, o);
+	o += 2 * sizeof(int);
+	height = *(GLenum*)offset(data, o);
+	o += sizeof(GLenum);
+
+	return o - off;
 }

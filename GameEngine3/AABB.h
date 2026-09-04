@@ -31,7 +31,11 @@ class Collision3D : public Instance
 	vec3 position;
 	vec3 size;
 	AABB3D boundingBox;
+
+	static std::set<int> allCollisionBoxes;
 public:
+
+	static void RenderAllCollisionBoxesDebug();
 	virtual Instance* clone_this();
 	bool checkCollision(Collision3D* other) const;
 	bool isInside(vec3 point) const;
@@ -43,6 +47,11 @@ public:
 
 	vec3 getCenter() const;
 	Collision3D();
+
+	virtual int saveInstanceToFile(FILE* file);
+	virtual int loadInstanceFromFile(void* data, int offset = 0);
+
+	void debugRender();
 };
 
 class Collision2D : public Instance
@@ -61,5 +70,9 @@ public:
 	vec2 getSize() const;
 
 	vec2 getCenter() const;
+
+	virtual int saveInstanceToFile(FILE* file);
+	virtual int loadInstanceFromFile(void* data, int offset = 0);
+
 	Collision2D();
 };

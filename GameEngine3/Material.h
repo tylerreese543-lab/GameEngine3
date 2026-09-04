@@ -23,6 +23,7 @@ public:
 
 	void setTexture(ImageResource* index);
 	void setShader(ShaderProgram* index);
+	void setTextureById(int id, int target);
 	//Will automatically look for child textures if a flag is present but no texture is bound.
 	void autoPrepare(bool autoFlags);
 	void SetTextureUseFlags(bool useDiffuse, bool useAmbientOcclusion, bool useNormal, bool useSpecular);
@@ -31,5 +32,9 @@ public:
 	int getShaderInstanceId();
 	int getTextureInstanceId(int target);
 	virtual Instance* clone_this();
+
+	virtual int saveInstanceToFile(FILE* file);
+	virtual int loadInstanceFromFile(void* data, int off = 0);
+
 };
 

@@ -1,6 +1,6 @@
 #include "Mesh.h"
 std::set<Mesh*> Mesh::render_objects;
-Geometry::Geometry() : RenderObject() {
+Geometry::Geometry() : Resource() {
 	name = "Geometry";
 	type = InstanceType_Geometry;
 	isGeometryInterleaved = false;
@@ -116,7 +116,7 @@ Mesh::Mesh() : Instance() {
 	type = InstanceType_Mesh;
 	name = "Mesh";
 	geometry = -1;
-
+	material = -1;
 	visible = true;
 
 	render_objects.insert(this);
@@ -142,26 +142,26 @@ void Mesh::render(Camera* camera) {
 	
 	if (!visible) return;
 	if (!isIdValid(geometry)) {
-		printf("Finding geometry\n");
+		//printf("Finding geometry\n");
 		geometry = getChildIdFromType(InstanceType_Geometry);
 	}
 	if (!isIdValid(geometry)) {
-		printf("Finding procedural geometry\n");
+		//printf("Finding procedural geometry\n");
 		geometry = getChildIdFromType(InstanceType_ProceduralGeometry);
 	}
 	if (!isIdValid(material)) {
 		material = getChildIdFromType(InstanceType_Material);
 	}
 	if (geometry == -1) {
-		printf("Abort rendering of '%s' - has no geometry bound.\n", name.c_str());
+		//printf("Abort rendering of '%s' - has no geometry bound.\n", name.c_str());
 		return;
 	}
 	if (material == -1) {
-		printf("Abort rendering of '%s' - has no material bound.\n", name.c_str());
+		//printf("Abort rendering of '%s' - has no material bound.\n", name.c_str());
 		return;
 	}
 	if (camera == nullptr) {
-		printf("Abort rendering of '%s' - has no camera attached.\n", name.c_str());
+		//printf("Abort rendering of '%s' - has no camera attached.\n", name.c_str());
 		return;
 	}
 	Material* m = (Material*)getInstanceById(material);
@@ -172,13 +172,15 @@ void Mesh::render(Camera* camera) {
 	}
 
 	Geometry* g = (Geometry*)getInstanceById(geometry);
+
+	if (!isInstanceOf(g->type, InstanceType_Geometry)) return;
 	if (g->vao == 0) {
 		g->generateVAO(&program->layout);
 	}
 	//printf("VAO for ID: %d: %d\n", geometry, g->vao);
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
-	glDisable(GL_CULL_FACE);
+	glEnable(GL_CULL_FACE);
 	glCullFace(GL_FRONT);
 	calcTransform();
 	m->applyMaterial();
@@ -199,13 +201,14 @@ void Geometry::autoSearchVBO() {
 
 void Geometry::loadFromFile(std::string filepath, int meshID, int ImporterFlags) {
 	Assimp::Importer importer;
-	const aiScene* scene = importer.ReadFile(filepath, ImporterFlags);
+	filePath = filepath;
+	const aiScene* scene = importer.ReadFile(resolveFilePath(filepath), ImporterFlags);
 	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
 		std::cout << "ERROR::ASSIMP::" << importer.GetErrorString() << std::endl;
 		return;
 	}
 
-	if (meshID < 0 || meshID > scene->mNumMeshes) meshID = 0;
+	if (meshID < 0 || meshID >= scene->mNumMeshes) meshID = 0;
 	aiMesh* mesh = scene->mMeshes[meshID];
 
 	int sizePos = mesh->mNumVertices * 3;
@@ -265,6 +268,30 @@ void Geometry::loadFromFile(std::string filepath, int meshID, int ImporterFlags)
 	autoSearchVBO();
 }
 
+int Geometry::saveInstanceToFile(FILE* file) {
+	int offset = 0;
+	offset += Resource::saveInstanceToFile(file);
+	offset += fwrite(filePath.data(), filePath.size() + 1, 1, file);
+	offset += fwrite(&isGeometryInterleaved, sizeof(bool), 1, file);
+	offset += fwrite(&vboFlags, sizeof(bool), eVBO_MAX, file);
+	return offset;
+}
+
+int Geometry::loadInstanceFromFile(void* data, int off) {
+	int o = off;
+	o += Resource::loadInstanceFromFile(data, o);
+	char filePathBuffer[128];
+	strcpy_s(filePathBuffer, sizeof(filePathBuffer), (char*)offset(data, o));
+	filePath = std::string(filePathBuffer);
+	o += strlen(filePathBuffer) + 1;
+	memcpy(&isGeometryInterleaved, offset(data, o), sizeof(bool));
+	o += sizeof(bool);
+	memcpy(&vboFlags, offset(data, o), sizeof(bool) * eVBO_MAX);
+	o += sizeof(bool) * eVBO_MAX;
+	//TODO: store/load importer flags/mesh ID but for now just use the defaults
+	loadFromFile(filePath);
+	return  o - off;
+}
 void Mesh::renderAllMeshes(Camera* camera) {
 	if (!camera) return;
 	for (Mesh* m : render_objects) {
@@ -281,6 +308,37 @@ Instance* Mesh::clone_this() {
 	Mesh* i = new Mesh(*this);
 	render_objects.insert(i);
 	return registerInstance(i, true);
+}
+
+int Mesh::saveInstanceToFile(FILE* file) {
+	int offset = 0;
+	offset += Instance::saveInstanceToFile(file);
+	offset += fwrite(&position, sizeof(vec3), 1, file);
+	offset += fwrite(&rotation, sizeof(vec3), 1, file);
+	offset += fwrite(&scale, sizeof(vec3), 1, file);
+	offset += fwrite(&geometry, sizeof(int), 1, file);
+	offset += fwrite(&material, sizeof(int), 1, file);
+	offset += fwrite(&visible, sizeof(bool), 1, file);
+	return offset;
+}
+
+int Mesh::loadInstanceFromFile(void* data, int off) {
+
+	int o = off;
+	o += Instance::loadInstanceFromFile(data, off);
+	position = *(vec3*)offset(data, o);
+	o += sizeof(vec3);
+	rotation = *(vec3*)offset(data, o);
+	o += sizeof(vec3);
+	scale = *(vec3*)offset(data, o);
+	o += sizeof(vec3);
+	geometry = *(int*)offset(data, o);
+	o += sizeof(int);
+	material = *(int*)offset(data, o);
+	o += sizeof(int);
+	visible = *(bool*)offset(data, o);
+	o += sizeof(bool);
+	return o - off;
 }
 
 ProceduralGeometry::ProceduralGeometry() : Geometry() {
@@ -309,7 +367,9 @@ void ProceduralGeometry::addVertex(ProceduralVertex vertex) {
 }
 
 void ProceduralGeometry::addTriangle(unsigned int a, unsigned int b, unsigned int c) {
-	indices.push_back(ivec3(a, b, c));
+	indices.push_back(a);
+	indices.push_back(b);
+	indices.push_back(c);
 	buffersDirty = true;
 }
 void ProceduralGeometry::clearData(bool onlyFloats) {
@@ -472,14 +532,9 @@ void ProceduralGeometry::generateBuffers() {
 		//Generate EBO
 
 		if (drawElements && !indices.empty()) {
-			ebo.data = malloc(indices.size() * 3 * sizeof(unsigned int));
-			ebo.calcSize(indices.size() * 3);
-			for (size_t i = 0; i < indices.size(); ++i) {
-				unsigned int* indexData = (unsigned int*)ebo.data;
-				indexData[i * 3 + 0] = indices[i].X;
-				indexData[i * 3 + 1] = indices[i].Y;
-				indexData[i * 3 + 2] = indices[i].Z;
-			}
+			ebo.data = malloc(indices.size() * sizeof(unsigned int));
+			ebo.calcSize(indices.size());
+			memcpy(ebo.data, indices.data(), ebo.size);
 		}
 	}
 
@@ -526,4 +581,46 @@ int ProceduralGeometry::generateVAO(BufferLayout* bufferLayout) {
 	generateBuffers();
 
 	return Geometry::generateVAO(bufferLayout);
+}
+
+int ProceduralGeometry::saveInstanceToFile(FILE* file) {
+	int offset = 0;
+	offset += Geometry::saveInstanceToFile(file);
+	offset += fwrite(&numExtraFloats, sizeof(int), 1, file);
+	offset += fwrite(&drawElements, sizeof(bool), 1, file);
+	offset += fwrite(&bufferUpdateMode, sizeof(GLenum), 1, file);
+	offset += fwrite(&vertices, sizeof(ProceduralVertex), vertices.size(), file);
+	offset += fwrite(&indices, sizeof(int), indices.size(), file);
+	for (float* data : extraFloatData) {
+		offset += fwrite(data, sizeof(float), numExtraFloats, file);
+	}
+	return offset;
+}
+
+int ProceduralGeometry::loadInstanceFromFile(void* data, int off) {
+	int o = off;
+	o += Geometry::loadInstanceFromFile(data, off);
+	memcpy(&numExtraFloats, offset(data, o), sizeof(int));
+	o += sizeof(int);
+	memcpy(&drawElements, offset(data, o), sizeof(bool));
+	o += sizeof(bool);
+	memcpy(&bufferUpdateMode, offset(data, o), sizeof(GLenum));
+	o += sizeof(GLenum);
+	int numVertices = *(int*)offset(data, o);
+	o += sizeof(int);
+	vertices.resize(numVertices);
+	memcpy(vertices.data(), offset(data, o), sizeof(ProceduralVertex) * numVertices);
+	o += sizeof(ProceduralVertex) * numVertices;
+	int numIndices = *(int*)offset(data, o);
+	o += sizeof(int);
+	indices.resize(numIndices);
+	memcpy(indices.data(), offset(data, o), sizeof(int) * numIndices);
+	o += sizeof(ivec3) * numIndices;
+	extraFloatData.resize(vertices.size());
+	for (size_t i = 0; i < vertices.size(); ++i) {
+		extraFloatData[i] = (float*)malloc(numExtraFloats * sizeof(float));
+		memcpy(extraFloatData[i], (char*)offset(data, o), sizeof(float) * numExtraFloats);
+		o += sizeof(float) * numExtraFloats;
+	}
+	return o - off;
 }
