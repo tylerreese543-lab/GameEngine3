@@ -71,12 +71,14 @@ const std::string Instance::instanceTypeNames[Instance::InstanceType_Count] = {
 	"ProceduralGeometry"
 };
 Instance::Instance() {
-	instanceId = 0;
+	instanceId = -1;
 	name = "Instance";
 	parent = nullptr;
 	type = InstanceType_Undefined;
 
+	savedId = -1;
 	registered = false;
+	saveToFile = true;
 	registerInstance(this);
 }
 
@@ -198,16 +200,21 @@ std::string Instance::getInstanceNameFromType(int type) {
 
 int Instance::loadInstanceFromFile(void* data, int off) {
 	int o = off;
-	type = *(int*)offset(data, o);
+	savedId = *(int*)offset(data, o);
 	o += sizeof(int);
-	instanceId = *(int*)offset(data, o);
-	o += sizeof(int);
-	size_t nameLength = *(size_t*)offset(data, o);
-	o += sizeof(size_t);
 	char* nameData = (char*)offset(data, o);
-	name = std::string(nameData, nameLength);
-	o += nameLength * sizeof(char);
-
+	name = std::string(nameData);
+	o += (name.size() + 1) * sizeof(char);
+	parentId = *(int*)offset(data, o);
+	o += sizeof(int);
+	childIds.clear();
+	int numChildren = *(int*)offset(data, o);
+	o += sizeof(int);
+	for (int i = 0; i < numChildren; ++i) {
+		int childId = *(int*)offset(data, o);
+		o += sizeof(int);
+		childIds.insert(childId);
+	}
 	return o - off;
 }
 
@@ -257,10 +264,20 @@ void Instance::update(float deltaTime, bool isStudio) {}
 
 int Instance::saveInstanceToFile(FILE* file) {
 	int tag = LOAD_INSTANCE_TAG;
+	int numBytes = this->getNumSaveBytes();
 	fwrite(&tag, sizeof(int), 1, file);
+	fwrite(&numBytes, sizeof(int), 1, file);
 	fwrite(&type, sizeof(int), 1, file);
 	fwrite(&instanceId, sizeof(int), 1, file);
 	fwrite(name.c_str(), sizeof(char), name.size() + 1, file);
+	int parentId = (parent != nullptr) ? parent->getId() : -1;
+	fwrite(&parentId, sizeof(int), 1, file);
+	int numChildren = children.size();
+	fwrite(&numChildren, sizeof(int), 1, file);
+	for (Instance* child : children) {
+		int childId = (child != nullptr) ? child->getId() : -1;
+		fwrite(&childId, sizeof(int), 1, file);
+	}
 	return 0; //TODO: return the size of the data written to the file, may not be needed however
 }
 
@@ -270,10 +287,38 @@ std::string Instance::getEngineGUIHash() {
 
 void Instance::handleDestroyQueue() {
 	for (Instance* inst : destroyQueue) {
-
-		destroyQueue.erase(inst);
 		inst->parent->children.erase(inst);
 		inst->destroy();
 
 	}
+	destroyQueue.clear();
 };
+
+void Instance::finalizeLoad(std::map<int, int>* conversionMap) {
+	for (int childId : childIds) {
+		Instance* child = getInstanceById((*conversionMap)[childId]);
+		if (child != nullptr) {
+			addChild(child);
+		}
+	}
+
+}
+
+int Instance::getNumSaveBytes() {
+	int size = 0;
+	size += sizeof(int); // type
+	size += sizeof(int); // instanceId
+	// name bytes written as C-string (null-terminated)
+	size += (int)((name.size() + 1) * sizeof(char)); // name data (including null)
+	size += 2 * sizeof(int); // parentId, numChildren
+	size += (int)(children.size() * sizeof(int)); // childIds
+	return size;
+}
+
+bool Instance::omitFromSave() {
+	return false;
+}
+
+bool Instance::omitFromHierarchyRender() {
+	return this->omitFromSave();
+}

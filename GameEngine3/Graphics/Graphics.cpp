@@ -1,5 +1,5 @@
 #include "Graphics.h"
-
+#include "../EngineGUI.h"
 Graphics* Graphics::instance = nullptr;
 Graphics::Graphics() {
 	viewportWidth = 800;
@@ -103,7 +103,9 @@ MouseData::MouseData() {
 void MouseData::update() {
 	Graphics* g = Graphics::getInstance();
 	glfwGetCursorPos(g->window, &(x), &(y));
-	screenFull = vec2(x, y) - (vec2(g->windowWidth, g->windowHeight) * 0.5);
+	vec2 s = vec2(x, y) - (vec2(g->windowWidth, g->windowHeight) * 0.5);
+	delta = s - screenFull;
+	screenFull = s;
 	screenNormalized = (screenFull * 2) / vec2(g->windowWidth, g->windowHeight);
 }
 void MouseData::setRawMouseInput(bool RawMouseInput) {
@@ -121,7 +123,11 @@ bool MouseData::isRawMouseInput() {
 	return glfwGetInputMode(Graphics::getInstance()->window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED;
 }
 void MouseData::SetButtonCallback(int button, int action, int mods) {
+			ImGuiIO& io = ImGui::GetIO();
 
+		if (io.WantCaptureMouse) {
+			return;
+			}
 	if (action == GLFW_PRESS) {
 		if (button == GLFW_MOUSE_BUTTON_LEFT) {
 			for (sol::protected_function& f : on_left_click.connections) {
@@ -147,18 +153,28 @@ void MouseData::SetButtonCallback(int button, int action, int mods) {
 }
 
 void KeyboardData::SetKeyCallback(int key, int scancode, int action, int mods) {
-	if (action == GLFW_PRESS) {
-		for (sol::protected_function& f : on_key_down.connections) {
-			f(key, scancode, mods);
-		}
-	}
-	else if (action == GLFW_RELEASE) {
-		for (sol::protected_function& f : on_key_up.connections) {
-			f(key, scancode, mods);
-		}
-	}
+		ImGuiIO& io = ImGui::GetIO();
+
+		if (io.WantCaptureKeyboard) {
+			return;
+			}
+			if (action == GLFW_PRESS) {
+				for (sol::protected_function& f : on_key_down.connections) {
+					f(key, scancode, mods);
+				}
+			}
+			else if (action == GLFW_RELEASE) {
+				for (sol::protected_function& f : on_key_up.connections) {
+					f(key, scancode, mods);
+				}
+			}
 }
 bool KeyboardData::isKeyDown(int key) {
+	ImGuiIO& io = ImGui::GetIO();
+
+	if (io.WantCaptureKeyboard) {
+		return false;
+	}
 	return glfwGetKey(Graphics::getInstance()->window, key) == GLFW_PRESS;
 }
 

@@ -249,7 +249,7 @@ void Collision3D::debugRender() {
 
 void Collision3D::RenderAllCollisionBoxesDebug() {
 	for (int i : allCollisionBoxes) {
-		printf("Rendering %d\n", i);
+		//printf("Rendering %d\n", i);
 		((Collision3D*)getInstanceById(i))->debugRender();
 	}
 }

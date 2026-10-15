@@ -15,6 +15,8 @@
 #include <queue>
 
 #include "Engine/tooltips.h"
+
+typedef std::map<int, int> inst_conv_map;
 class Instance {
 	static int currentinstanceID;
 	static std::map<unsigned int, unsigned int> instanceHierarchyMap;
@@ -64,11 +66,15 @@ public:
 	virtual Instance* clone();
 	virtual int destroy();
 	int instanceId;
+	int savedId;
+	int parentId;
 	int type;
 	bool registered;
+	bool saveToFile;
 	std::string name;
 	Instance* parent;
 	std::set<Instance*> children;
+	std::set<int> childIds; //Only use this for temp save/load;
 	int getId();
 	virtual int addChild(Instance* child);
 	virtual int setParent(Instance* parent);
@@ -82,11 +88,15 @@ public:
 	virtual int getTypeTooltip();
 	virtual std::string getEngineGUIHash();
 	void listChildren();
-
+	
+	virtual bool omitFromSave();
+	virtual bool omitFromHierarchyRender();
+	virtual int getNumSaveBytes();
 	static std::string getInstanceNameFromType(int type);
 	static void handleDestroyQueue();
 	virtual int saveInstanceToFile(FILE* file); //Returns a pointer to the data representing this instance. The caller is responsible for freeing this memory.
 	virtual int loadInstanceFromFile(void* data, int offset = 0); //Loads the instance from the given data. The caller is responsible for ensuring that the data is valid and properly formatted.
+	virtual void finalizeLoad(inst_conv_map* conversionMap); //Called after the instance has been loaded from file and all children have been loaded. This is useful for setting up any references to other instances that may not have been loaded yet.
 };
 
 void* offset(void* ptr, size_t offset);

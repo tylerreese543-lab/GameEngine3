@@ -35,7 +35,13 @@ function Tick(deltaTime)
 	camera.Position = camera.Position + moveVector
 
 	if (MouseData:IsRawMouseInput()) then
-		camera.Rotation = Vector3.new(MouseData.Position.Y / 300, MouseData.Position.X / 300, 0);
+
+		camera.Rotation = camera.Rotation + Vector3.new(MouseData.Delta.Y / 300, MouseData.Delta.X / 300, 0);
+		if camera.Rotation.X > math.pi * 0.5 then
+			camera.Rotation.X = math.pi * 0.5
+		elseif camera.Rotation.X < -math.pi * 0.5 then
+			camera.Rotation.X = -math.pi * 0.5
+		end
 	end
 
 end

@@ -153,15 +153,15 @@ void Mesh::render(Camera* camera) {
 		material = getChildIdFromType(InstanceType_Material);
 	}
 	if (geometry == -1) {
-		//printf("Abort rendering of '%s' - has no geometry bound.\n", name.c_str());
+		printf("Abort rendering of '%s' - has no geometry bound.\n", name.c_str());
 		return;
 	}
 	if (material == -1) {
-		//printf("Abort rendering of '%s' - has no material bound.\n", name.c_str());
+		printf("Abort rendering of '%s' - has no material bound.\n", name.c_str());
 		return;
 	}
 	if (camera == nullptr) {
-		//printf("Abort rendering of '%s' - has no camera attached.\n", name.c_str());
+		printf("Abort rendering of '%s' - has no camera attached.\n", name.c_str());
 		return;
 	}
 	Material* m = (Material*)getInstanceById(material);
@@ -271,7 +271,6 @@ void Geometry::loadFromFile(std::string filepath, int meshID, int ImporterFlags)
 int Geometry::saveInstanceToFile(FILE* file) {
 	int offset = 0;
 	offset += Resource::saveInstanceToFile(file);
-	offset += fwrite(filePath.data(), filePath.size() + 1, 1, file);
 	offset += fwrite(&isGeometryInterleaved, sizeof(bool), 1, file);
 	offset += fwrite(&vboFlags, sizeof(bool), eVBO_MAX, file);
 	return offset;
@@ -280,23 +279,31 @@ int Geometry::saveInstanceToFile(FILE* file) {
 int Geometry::loadInstanceFromFile(void* data, int off) {
 	int o = off;
 	o += Resource::loadInstanceFromFile(data, o);
-	char filePathBuffer[128];
-	strcpy_s(filePathBuffer, sizeof(filePathBuffer), (char*)offset(data, o));
-	filePath = std::string(filePathBuffer);
-	o += strlen(filePathBuffer) + 1;
 	memcpy(&isGeometryInterleaved, offset(data, o), sizeof(bool));
 	o += sizeof(bool);
 	memcpy(&vboFlags, offset(data, o), sizeof(bool) * eVBO_MAX);
 	o += sizeof(bool) * eVBO_MAX;
 	//TODO: store/load importer flags/mesh ID but for now just use the defaults
 	loadFromFile(filePath);
-	return  o - off;
+	return o - off;
 }
 void Mesh::renderAllMeshes(Camera* camera) {
-	if (!camera) return;
+	if (!camera)  {
+		debug_log("No camera provided for rendering meshes. Aborting render.\n");
+		return;
+	}
 	for (Mesh* m : render_objects) {
+		debug_log("Rendering mesh '%s' (ID: %d) with geometry ID: %d and material ID: %d\n", m->name.c_str(), m->instanceId, m->geometry, m->material);
 		m->render(camera);
 	}
+}
+
+int Geometry::getNumSaveBytes() {
+	return Resource::getNumSaveBytes() + sizeof(bool) + sizeof(bool) * eVBO_MAX;
+}
+
+int Mesh::getNumSaveBytes() {
+	return Instance::getNumSaveBytes() + sizeof(vec3) * 3 + sizeof(int) * 1 + sizeof(bool);
 }
 
 int Mesh::destroy() {
@@ -325,7 +332,7 @@ int Mesh::saveInstanceToFile(FILE* file) {
 int Mesh::loadInstanceFromFile(void* data, int off) {
 
 	int o = off;
-	o += Instance::loadInstanceFromFile(data, off);
+	o += Instance::loadInstanceFromFile(data, o);
 	position = *(vec3*)offset(data, o);
 	o += sizeof(vec3);
 	rotation = *(vec3*)offset(data, o);
@@ -338,9 +345,23 @@ int Mesh::loadInstanceFromFile(void* data, int off) {
 	o += sizeof(int);
 	visible = *(bool*)offset(data, o);
 	o += sizeof(bool);
+	debug_log("Loaded geometry ID: %d, material ID: %d, visible: %d\n", geometry, material, visible);
 	return o - off;
 }
 
+void Mesh::finalizeLoad(inst_conv_map* conversionMap) {
+
+	Instance::finalizeLoad(conversionMap);
+	debug_log("Finalizing load of Mesh '%s' (ID: %d) with geometry ID: %d, material ID: %d\n", name.c_str(), instanceId, geometry, material);
+	if (conversionMap->find(geometry) != conversionMap->end()) {
+		geometry = conversionMap->at(geometry);
+		debug_log("Converted geometry ID to: %d\n", geometry);
+	}
+	if (conversionMap->find(material) != conversionMap->end()) {
+		material = conversionMap->at(material);
+		debug_log("Converted material ID to: %d\n", material);
+	}
+}
 ProceduralGeometry::ProceduralGeometry() : Geometry() {
 	name = "ProceduralGeometry";
 	type = InstanceType_ProceduralGeometry;
@@ -589,7 +610,11 @@ int ProceduralGeometry::saveInstanceToFile(FILE* file) {
 	offset += fwrite(&numExtraFloats, sizeof(int), 1, file);
 	offset += fwrite(&drawElements, sizeof(bool), 1, file);
 	offset += fwrite(&bufferUpdateMode, sizeof(GLenum), 1, file);
+	int numVertices = vertices.size();
+	offset += fwrite(&numVertices, sizeof(int), 1, file);
 	offset += fwrite(&vertices, sizeof(ProceduralVertex), vertices.size(), file);
+	int numIndices = indices.size();
+	offset += fwrite(&numIndices, sizeof(int), 1, file);
 	offset += fwrite(&indices, sizeof(int), indices.size(), file);
 	for (float* data : extraFloatData) {
 		offset += fwrite(data, sizeof(float), numExtraFloats, file);
@@ -599,7 +624,7 @@ int ProceduralGeometry::saveInstanceToFile(FILE* file) {
 
 int ProceduralGeometry::loadInstanceFromFile(void* data, int off) {
 	int o = off;
-	o += Geometry::loadInstanceFromFile(data, off);
+	o += Geometry::loadInstanceFromFile(data, o);
 	memcpy(&numExtraFloats, offset(data, o), sizeof(int));
 	o += sizeof(int);
 	memcpy(&drawElements, offset(data, o), sizeof(bool));
@@ -608,14 +633,14 @@ int ProceduralGeometry::loadInstanceFromFile(void* data, int off) {
 	o += sizeof(GLenum);
 	int numVertices = *(int*)offset(data, o);
 	o += sizeof(int);
-	vertices.resize(numVertices);
-	memcpy(vertices.data(), offset(data, o), sizeof(ProceduralVertex) * numVertices);
+	vertices.resize(100);
+	//memcpy(vertices.data(), offset(data, o), sizeof(ProceduralVertex) * numVertices);
 	o += sizeof(ProceduralVertex) * numVertices;
 	int numIndices = *(int*)offset(data, o);
 	o += sizeof(int);
-	indices.resize(numIndices);
-	memcpy(indices.data(), offset(data, o), sizeof(int) * numIndices);
-	o += sizeof(ivec3) * numIndices;
+	//indices.resize(numIndices);
+	//memcpy(indices.data(), offset(data, o), sizeof(int) * numIndices);
+	o += sizeof(int) * numIndices;
 	extraFloatData.resize(vertices.size());
 	for (size_t i = 0; i < vertices.size(); ++i) {
 		extraFloatData[i] = (float*)malloc(numExtraFloats * sizeof(float));
@@ -623,4 +648,14 @@ int ProceduralGeometry::loadInstanceFromFile(void* data, int off) {
 		o += sizeof(float) * numExtraFloats;
 	}
 	return o - off;
+}
+
+int ProceduralGeometry::getNumSaveBytes() {
+	int size = Geometry::getNumSaveBytes();
+	size += sizeof(int) + sizeof(int);
+	size += sizeof(int) + sizeof(bool) + sizeof(GLenum);
+	size += sizeof(ProceduralVertex) * vertices.size();
+	size += sizeof(int) * indices.size();
+	size += sizeof(float) * numExtraFloats * vertices.size();
+	return size;
 }

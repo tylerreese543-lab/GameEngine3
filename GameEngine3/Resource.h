@@ -10,6 +10,9 @@ public:
 	static std::string resolveFilePath(const std::string& path);
 	std::string filePath;
 	Resource();
+	virtual int saveInstanceToFile(FILE* file);
+	virtual int loadInstanceFromFile(void* data, int offset = 0);
+	virtual int getNumSaveBytes();
 	virtual ~Resource();
 	virtual Instance* clone_this();
 };

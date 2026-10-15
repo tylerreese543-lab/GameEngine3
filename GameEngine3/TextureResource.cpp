@@ -166,21 +166,28 @@ int ImageResource::saveInstanceToFile(FILE* file) {
 	offset += fwrite(&textureType, sizeof(int), 1, file);
 	offset += fwrite(&typeLoadFile, sizeof(GLenum), 1, file);
 	offset += fwrite(&GLTextureParameters, sizeof(GLenum), 4, file);
-	offset += fwrite(filePath.data(), sizeof(char), filePath.size() + 1, file);
 
 	return offset;
 }
 
 int ImageResource::loadInstanceFromFile(void* data, int off) {
 	int o = off;
+	o += Resource::loadInstanceFromFile(data, o);
 	width = *(int*)offset(data, o);
 	o += sizeof(int);
 	height = *(int*)offset(data, o);
 	o += sizeof(int);
 	Channels = *(int*)offset(data, o);
 	o += 2 * sizeof(int);
-	height = *(GLenum*)offset(data, o);
+	textureType = *(int*)offset(data, o);
+	o += sizeof(int);
+	typeLoadFile = *(GLenum*)offset(data, o);
 	o += sizeof(GLenum);
+	memcpy(GLTextureParameters, offset(data, o), sizeof(GLenum) * 4);
+	o += sizeof(GLenum) * 4;
+
+	loadFromFile(filePath, typeLoadFile);
+
 
 	return o - off;
 }

@@ -42,3 +42,24 @@ FILE* Resource::openResourceFile(std::string filepath, const char* mode) {
 	}
 	return file;
 }
+
+int Resource::saveInstanceToFile(FILE* file) {
+	int offset = Instance::saveInstanceToFile(file);
+	offset += fwrite(filePath.c_str(), sizeof(char), filePath.size() + 1, file);
+	return offset;
+}
+
+int Resource::loadInstanceFromFile(void* data, int off) {
+	int o = off;
+	o += Instance::loadInstanceFromFile(data, o);
+	char* pathData = (char*)offset(data, o);
+	filePath = std::string(pathData);
+	o += (filePath.size() + 1) * sizeof(char);
+	return o - off;
+}
+
+int Resource::getNumSaveBytes() {
+	int size = Instance::getNumSaveBytes();
+	size += (filePath.size() + 1) * sizeof(char);
+	return size;
+}

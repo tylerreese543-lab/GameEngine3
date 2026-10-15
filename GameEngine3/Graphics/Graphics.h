@@ -12,6 +12,7 @@ public:
 	double y;
 	vec2 screenNormalized;
 	vec2 screenFull;
+	vec2 delta;
 
 	MouseData();
 	void update();

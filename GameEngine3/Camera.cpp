@@ -1,6 +1,10 @@
 #include "Camera.h"
 
 #include "Graphics/GraphicsWrapper.h"
+#include "Graphics/graphics_include.h"
+#include "Graphics/Buffer.h"
+#include "Graphics/VertexArrayObject.h"
+#include "Scene.h"
 Camera::Camera() : Instance() {
 
 	near_plane = 0;
@@ -10,6 +14,7 @@ Camera::Camera() : Instance() {
 	type = InstanceType_Camera;
 	setPlanes(0.1, 1000.0f);
 	fov = 90;
+	isEditorCamera = false;
 }
 
 
@@ -85,9 +90,75 @@ Instance* Camera::clone_this() {
 	newCamera->far_plane = this->far_plane;
 	newCamera->fov = this->fov;
 	newCamera->aspect_ratio = this->aspect_ratio;
+	newCamera->isEditorCamera = this->isEditorCamera;
 	newCamera->updateMatrices();
 	return newCamera;
 }
 
 void Camera::update(float deltaTime, bool isStudio) {
+}
+
+int Camera::getNumSaveBytes() {
+	return sizeof(vec3) * 2 + sizeof(float) * 4 + Instance::getNumSaveBytes();
+}
+
+bool Camera::omitFromSave() {
+	return isEditorCamera == true;
+}
+
+void Camera::debugRender() {
+		//GL_LINES
+	Buffer vertexBuffer;
+
+	vertexBuffer.data = new vec3[16]{
+		//Back
+		vec3(0, 0, 0),
+		vec3(1, -1, 1),
+
+		vec3(0, 0, 0),
+		vec3(1, 1, 1),
+
+		vec3(0, 0, 0),
+		vec3(-1, 1, 1),
+
+		vec3(0, 0, 0),
+		vec3(-1, -1, 1),
+
+		vec3(1, -1, 1),
+		vec3(1, 1, 1),
+
+		vec3(1, 1, 1),
+		vec3(-1, 1, 1),
+
+		vec3(-1, 1, 1),
+		vec3(-1, -1, 1),
+
+		vec3(-1, -1, 1),
+		vec3(1, -1, 1),
+	};
+
+	vertexBuffer.element_size = sizeof(vec3);
+	vertexBuffer.calcSize(16);
+	unsigned int vao = 0;
+
+	ShaderProgram* program = (ShaderProgram*)getInstanceById(Scene::getCurrentScene()->hitboxShader);
+	program->useProgram();
+	vertexBuffer.generate();
+	GenVAO(&vao, &vertexBuffer, nullptr, &program->layout);
+
+	Camera* camera = Scene::getCurrentScene()->getCamera();
+
+	mat4 transform = mat4::transform(position, vec3(1, 1, 1), rotation);
+	program->setUniformSMat(program->shaderUniformNames[eSUniform_ModelTransformMatrix], transform, GL_TRUE, 4);
+	program->setUniform3f(program->shaderUniformNames[eSUniform_CameraPosition], camera->position);
+	program->setUniformSMat(program->shaderUniformNames[eSUniform_CameraLookMatrix], camera->look, GL_TRUE, 3);
+	program->setUniformSMat(program->shaderUniformNames[eSUniform_CameraProjectionMatrix], camera->projection, GL_TRUE, 4);
+	program->setUniform1f(program->shaderUniformNames[eSUniform_CurrentTime], Graphics::getInstance()->lastFrameTime);
+
+	glBindVertexArray(vao);
+	glDrawArrays(GL_LINES, 0, 16);
+	glBindVertexArray(0);
+	glDeleteVertexArrays(1, &vao);
+
+
 }

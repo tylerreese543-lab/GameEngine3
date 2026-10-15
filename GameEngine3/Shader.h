@@ -10,6 +10,8 @@
 #include "Resource.h"
 class ShaderResource : public Resource {
 public:
+	static const std::string shaderTypeNames[2];
+	static const GLenum shaderTypeEnums[2];
 	GLuint id;
 	GLenum shaderType;
 	char* source;
@@ -28,6 +30,8 @@ public:
 	virtual ~ShaderResource();
 	virtual int saveInstanceToFile(FILE* file);
 	virtual int loadInstanceFromFile(void* data, int offset = 0);
+
+	virtual int getNumSaveBytes();
 };//aBus was here
 
 class ShaderProgram : public Resource {
@@ -66,4 +70,8 @@ public:
 
 	virtual int saveInstanceToFile(FILE* file);
 	virtual int loadInstanceFromFile(void* data, int offset = 0);
+
+	virtual int getNumSaveBytes();
+
+	virtual void finalizeLoad(inst_conv_map* conversionMap);
 };

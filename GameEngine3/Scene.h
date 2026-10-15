@@ -6,10 +6,15 @@ class Scene : public Instance
 {
 	static int currentScene;
 	static void WriteGameFileHeader(FILE* file);
+	static bool LoadGameFileHeader(FILE* file, int* numInstances);
+
 public:
-	int camera;
+	static const bool isStudio;
+	int currentCamera;
+	//The ID of the camera to load into currentCamera when this is loaded at runtime;
+	int startCamera;
 	int hitboxShader;
-	bool isStudio;
+
 	Scene();
 
 	static void setCurrentScene(int scene);
@@ -24,5 +29,7 @@ public:
 
 	static int saveSceneToFile(const char* filepath);
 	static int loadSceneFromFile(const char* filepath);
+
+	virtual int getNumSaveBytes();
 };
 

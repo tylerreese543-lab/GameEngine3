@@ -14,68 +14,49 @@ int main() {
 	//GRAPHICS - get the graphics instance and initialize
 	Graphics* graphics = Graphics::getInstance();
 
-	Scene* scene = new Scene();
 	graphics->initializeWindow(800, 600, "Game Engine 3");
 	graphics->matchViewportToWindow = true;
 	
-	scene->isStudio = true;
 	LuaResource::InitializeLua();
 
 	EngineGUI::InitializeEngineGUI();
+
+
+
+#ifndef STUDIO_EDITOR
+	Scene::loadSceneFromFile("scene.bin");
+	Scene* scene = Scene::getCurrentScene();
+	scene->currentCamera = scene->startCamera;
+	debug_log("Loaded scene '%s' (ID %d) from file 'scene.bin'. Starting with camera ID %d.\n", scene->name.c_str(), scene->getId(), scene->currentCamera);
+	scene->startCamera = -1;
+#else
+	Scene* scene = new Scene();
 	Camera* camera = new Camera(vec3(0, 0, -2));
 	camera->fov = 70.0f;
+	camera->isEditorCamera = true;
+	scene->currentCamera = camera->getId();
 	scene->addChild(camera);
-
 	Instance* resources = new Instance();
 	resources->name = "Resources";
 	resources->setParent(scene);
 
-	//SHADERS - load from file, parent to shader program and create;
-	ShaderProgram* sprog = new ShaderProgram("res://shader/vertex_shader.glsl", "res://shader/fragment_shader.glsl");
-	sprog->createProgram();
-	sprog->setParent(resources);
+
 
 	ShaderProgram* sprog2 = new ShaderProgram("res://shader/vs_hitbox.glsl", "res://shader/fs_hitbox.glsl");
 	sprog2->createProgram();
 	sprog2->setParent(resources);
 	sprog2->name = "HitboxShader";
 	scene->hitboxShader = sprog2->getId();
-	//IMAGES - load from file
-	ImageResource* texture0 = new ImageResource(eMaterialTexture_Diffuse, "res://textures/poinsettia.png");
-	ImageResource* texture1 = new ImageResource(eMaterialTexture_AmbientOcclusion, "res://textures/suz_ao.png");
-	texture0->name = "DiffuseTex";
-	texture1->name = "AOTex";
-	//MATERIAL - parent images/shader to material, set color
-	Material* material = new Material();
-	material->addChild(texture0);
-	material->addChild(texture1);
-	material->setShader(sprog);
-	material->autoPrepare(true);
-	material->name = "Materiala";
-	material->diffuseColor = vec3(0.4, 0.6, 0.9);
-	Material* material2 = (Material*)material->clone();
-	material2->autoPrepare(true);
-	material2->diffuseColor = vec3(0.9, 0.6, 0.4);
-	//GEOMETRY - load model from file
-
-	Geometry* proceduralGeometry = new Geometry();
-	proceduralGeometry->loadFromFile("res://models/Cube.fbx");
-	proceduralGeometry->setParent(resources);
-	Mesh* model = new Mesh();
-	model->addChild(material);
-	model->setPosition(vec3(-1, 0, 5));
-	
-	Geometry* proceduralGeometry2 = new Geometry();
-	proceduralGeometry2->loadFromFile("res://models/suz.fbx");
-	proceduralGeometry2->setParent(resources);
-	LuaResource* script = new LuaResource("res://scripts/program.lua");
+	LuaResource* script = new LuaResource("core://scripts/program.lua");
 	script->isEngineScript = true;
 	script->setParent(resources);
-	model->setParent(scene);
-	model->name = "Model1";
 	script->loadScript();
 
-	Scene::saveSceneToFile("scene.bin");
+#endif
+
+	//Scene::loadSceneFromFile("scene.bin");
+
+	//Scene::saveSceneToFile("scene.bin");
 	//CAMERA - define camera position, planes, and FOV
 	//LOOP
 
@@ -89,16 +70,7 @@ int main() {
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 
-		{
-		    ImGui::Begin("Settings Panel"); // Create a window
-            
-            ImGui::Text("Hello, user! Adjust settings below:"); // Text
-
-			ImGui::End();
-
-		}
-
-					// Loop through all instances in your world map/vector
+#ifdef _DEBUG
 		{
 			ImGui::Begin("Scene Hierarchy");
 			
@@ -108,6 +80,26 @@ int main() {
 			
 			ImGui::End();
 		}
+#endif
+#ifdef STUDIO_EDITOR
+
+		{
+			ImGui::Begin("File Settings");
+
+			if (ImGui::Button("Save Scene As...")) {
+				//Add a file dialog here to select the scene file to save
+				Scene::saveSceneToFile("scene.bin");
+			}
+
+			if (ImGui::Button("Load Scene From ...")) {
+				//Add a file dialog here to select the scene file to load
+
+				Scene::getCurrentScene()->destroy();
+				Scene::loadSceneFromFile("scene.bin");
+			}
+			ImGui::End();
+		}
+					// Loop through all instances in your world map/vector
 
 		{
 			ImGui::Begin("Inspector");
@@ -127,11 +119,11 @@ int main() {
 
 		EngineGUI::DrawRightClickVoidContextMenuNode();
 		EngineGUI::DrawAddInstanceModalNode();
-		
+#endif
 		ImGui::Render(); 
 		for (auto i : Instance::world) {
 			if (i.second) {
-				i.second->update(graphics->deltaTime, Scene::getCurrentScene()->isStudio);
+				i.second->update(graphics->deltaTime, Scene::isStudio);
 			}
 		}
 		glBindVertexArray(0);

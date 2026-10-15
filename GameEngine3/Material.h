@@ -36,5 +36,8 @@ public:
 	virtual int saveInstanceToFile(FILE* file);
 	virtual int loadInstanceFromFile(void* data, int off = 0);
 
+	virtual int getNumSaveBytes();
+
+	virtual void finalizeLoad(std::map<int, int>* conversionMap);
 };
 

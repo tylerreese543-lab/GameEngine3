@@ -141,3 +141,19 @@ int Material::loadInstanceFromFile(void* data, int off) {
 	o += sizeof(bool) * eMaterialTexture_MAX;
 	return o - off; // Return the number of bytes read
 }
+
+int Material::getNumSaveBytes() {
+	return Instance::getNumSaveBytes() + sizeof(vec3) + sizeof(float) + sizeof(int) + sizeof(int) * eMaterialTexture_MAX + sizeof(bool) * eMaterialTexture_MAX;
+}
+
+void Material::finalizeLoad(inst_conv_map* conversionMap) {
+	Instance::finalizeLoad(conversionMap);
+	if (conversionMap->count(shader) > 0) {
+		shader = (*conversionMap)[shader];
+	}
+	for (int i = 0; i < eMaterialTexture_MAX; ++i) {
+		if (conversionMap->count(textures[i]) > 0) {
+			textures[i] = (*conversionMap)[textures[i]];
+		}
+	}
+}

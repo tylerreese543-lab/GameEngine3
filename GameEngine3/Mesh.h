@@ -34,6 +34,8 @@ public:
 
 	virtual int saveInstanceToFile(FILE* file);
 	virtual int loadInstanceFromFile(void* data, int offset = 0);
+
+	virtual int getNumSaveBytes();
 };
 
 class ProceduralVertex {
@@ -84,6 +86,7 @@ public:
 
 	virtual void render();
 
+	virtual int getNumSaveBytes();
 	virtual int saveInstanceToFile(FILE* file);
 	virtual int loadInstanceFromFile(void* data, int offset = 0);
 };
@@ -117,4 +120,7 @@ public:
 
 	virtual int saveInstanceToFile(FILE* file);
 	virtual int loadInstanceFromFile(void* data, int offset = 0);
+	virtual int getNumSaveBytes();
+
+	virtual void finalizeLoad(inst_conv_map* conversionMap);
 };

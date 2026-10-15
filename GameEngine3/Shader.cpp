@@ -1,6 +1,13 @@
 #include "Shader.h"
 
-
+const std::string ShaderResource::shaderTypeNames[] = {
+	"Vertex Shader",
+	"Fragment Shader"
+};
+const GLenum ShaderResource::shaderTypeEnums[] = {
+	GL_VERTEX_SHADER,
+	GL_FRAGMENT_SHADER
+};
 ShaderResource::ShaderResource() : Resource() {
 	name = "Shader";
 	type = InstanceType_ShaderResource;
@@ -138,7 +145,7 @@ int ShaderProgram::createProgram() {
 		id = 0;
 	}
 	id = glCreateProgram();
-	printf("Creating program...\n");
+	printf("Creating program... (id = %d)\n", id);
 	std::vector<ShaderResource*> shaders;
 	for (Instance* child : children) {
 		if (child->type != InstanceType_ShaderResource) {
@@ -380,6 +387,8 @@ int ShaderResource::loadInstanceFromFile(void* data, int off) {
 		source = nullptr;
 	}
 	o += sourceLength + 1;
+	compiled = false;
+	loadFromFile(filePath.c_str());
 	return o - off;
 }
 
@@ -401,6 +410,9 @@ int ShaderProgram::saveInstanceToFile(FILE* file) {
 
 int ShaderProgram::loadInstanceFromFile(void* data, int off) {
 	int o = off;
+	o += Resource::loadInstanceFromFile(data, o);
+	loadInterleaved = *(bool*)offset(data, o);
+	o += sizeof(bool);
 	for (int i = 0; i < eVAttribute_MAX; ++i) {
 		shaderAttributeNames[i] = std::string((char*)offset(data, o));
 		o += shaderAttributeNames[i].size() + 1;
@@ -414,4 +426,41 @@ int ShaderProgram::loadInstanceFromFile(void* data, int off) {
 		o += shaderTextureNames[i].size() + 1;
 	}
 	return o - off;
+}
+
+int ShaderResource::getNumSaveBytes() {
+	int size = 0;
+	size += Resource::getNumSaveBytes();
+	size += sizeof(GLenum);
+	size += filePath.size() + 1;
+	size += sizeof(int);
+	size += sizeof(bool);
+	if (source != nullptr) {
+		size += strlen(source) + 1;
+	}
+	else {
+		size += 1; // For the null terminator
+	}
+	return size;
+}
+
+int ShaderProgram::getNumSaveBytes() {
+	int size = 0;
+	size += Resource::getNumSaveBytes();
+	size += sizeof(bool);
+	for(int i = 0; i < eVAttribute_MAX; ++i) {
+		size += shaderAttributeNames[i].size() + 1;
+	}
+	for(int i = 0; i < eSUniform_MAX; ++i) {
+		size += shaderUniformNames[i].size() + 1;
+	}
+	for(int i = 0; i < eMaterialTexture_MAX; ++i) {
+		size += shaderTextureNames[i].size() + 1;
+	}
+	return size;
+}
+
+void ShaderProgram::finalizeLoad(inst_conv_map* conversionMap) {
+	Resource::finalizeLoad(conversionMap);
+	createProgram();
 }

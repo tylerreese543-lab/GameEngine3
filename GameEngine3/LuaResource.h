@@ -26,7 +26,10 @@ public:
 
 	static sol::object __luaIndex(Instance* self, sol::this_state ts, const std::string& key);
 
+	virtual bool omitFromSave();
 	virtual int saveInstanceToFile(FILE* file);
 	virtual int loadInstanceFromFile(void* data, int off = 0);
+	virtual int getNumSaveBytes();
+	virtual void finalizeLoad(inst_conv_map* conversionMap);
 };
 

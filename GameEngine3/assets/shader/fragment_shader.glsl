@@ -10,5 +10,5 @@ uniform sampler2D t_AmbientOcclusion;
 uniform vec3 m_DiffuseColor;
 void main() {
 	
-	color = vec4(m_DiffuseColor, 1.) * (texture(t_Diffuse, out_texCoord) * vec4(texture(t_AmbientOcclusion, out_texCoord).r));
+	color = vec4(1.);
 }

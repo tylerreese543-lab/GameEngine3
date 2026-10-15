@@ -1,4 +1,6 @@
 #include "GraphicsWrapper.h"
+#include <windows.h>
+#include <stdio.h>
 int getSizeOfType(GLenum type) {
 	switch (type) {
 	case GL_FLOAT_VEC3:
@@ -39,4 +41,20 @@ void setMat3Row(float* array, float f0, float f1, float f2) {
 
 void multMat4(float* arrS, float* arr0, float* arr1) {
 
+}
+
+
+void debug_log(const char *format, ...) {
+    va_list args;
+    char buffer[1024]; // Temporary buffer for the formatted string
+
+    va_start(args, format);
+    
+    // Safely format the text into the string buffer (prevents buffer overflow)
+    vsnprintf(buffer, sizeof(buffer), format, args);
+    
+    va_end(args);
+
+    // Send the formatted string to the Windows debugger
+    OutputDebugStringA(buffer);
 }

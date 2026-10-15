@@ -18,7 +18,12 @@ bool EngineGUI::wasXMLSuccessful = false;
 const int EngineGUI::EDITOR_ADD_INSTANCE[] = {
 	Instance::InstanceType_Camera,
 	Instance::InstanceType_Mesh,
-	Instance::InstanceType_Collision3D
+	Instance::InstanceType_Collision3D,
+	Instance::InstanceType_ShaderProgram,
+	Instance::InstanceType_ShaderResource,
+	Instance::InstanceType_ImageResource,
+	Instance::InstanceType_Material,
+	Instance::InstanceType_Geometry
 };
 
 const std::string EngineGUI::placeholderNoInstance = "No instance selected";
@@ -125,6 +130,10 @@ void EngineGUI::DrawHierarchyNode(Instance* instance) {
 		if (has_children) {
 			for (Instance* child : instance->children) {
 				// Recursively call the same function for the next layer down
+				
+				if (child->omitFromHierarchyRender()) {
+					continue; // Skip this child if it's null or should be omitted
+				}
 				DrawHierarchyNode(child);
 			}
 		}
@@ -224,10 +233,14 @@ void EngineGUI::DrawInspectorPanel(Instance* inst) {
 			m->hitboxShader = eyeDropperId;
 			endEyeDropper();
 		}
-		ImGui::InputText("Hitbox Shader", placeholderName(Instance::getInstanceById(m->hitboxShader)), ImGuiInputTextFlags_ReadOnly);
+		if (hasEyeDropCompleted(inst->getId(), 2)) {
+			m->startCamera = eyeDropperId;
+			endEyeDropper();
+		}
+		ImGui::InputText("Start Camera", placeholderName(Instance::getInstanceById(m->startCamera)), ImGuiInputTextFlags_ReadOnly);
 		renderTooltipForItem(IDS_IATTR_GEOMETRY);
-		if (ImGui::Button("Select Hitbox Shader...")) {
-			startEyeDropper(inst->getId(), 1);
+		if (ImGui::Button("Select Start Camera...")) {
+			startEyeDropper(inst->getId(), 2);
 		}
 	}
 	if (inst->type == Instance::InstanceType_Collision3D) {
@@ -252,6 +265,12 @@ void EngineGUI::DrawInspectorPanel(Instance* inst) {
 				m->setTextureById(eyeDropperId, i);
 				endEyeDropper();
 			}
+		}
+
+		if (hasEyeDropCompleted(inst->getId(), 5)) {
+			printf("Eye dropper completed for shader\n");
+			m->setShader((ShaderProgram*)Instance::getInstanceById(eyeDropperId));
+			endEyeDropper();
 		}
 
 		ImGui::ColorEdit3("Albedo Color", (float*)&m->diffuseColor);
@@ -282,7 +301,11 @@ void EngineGUI::DrawInspectorPanel(Instance* inst) {
 		if (ImGui::Button("Select Ambient Occlusion Map...")) {
 			startEyeDropper(inst->getId(), 4, true);
 		}
-
+		ImGui::InputText("Shader", placeholderName(Instance::getInstanceById(m->getShaderInstanceId())), ImGuiInputTextFlags_ReadOnly);
+		renderTooltipForItem(IDS_IATTR_GEOMETRY);
+		if (ImGui::Button("Select Shader...")) {
+			startEyeDropper(inst->getId(), 5, true);
+		}
 		if (ImGui::Button("Auto-Prepare Material")) {
 			m->autoPrepare(true);
 		};
@@ -304,6 +327,10 @@ void EngineGUI::DrawInspectorPanel(Instance* inst) {
 				ShaderResource* imgRes = (ShaderResource*)inst;
 				imgRes->loadFromFile(m->filePath.c_str());
 			}
+			if (inst->type == Instance::InstanceType_Geometry) {
+				Geometry* imgRes = (Geometry*)inst;
+				imgRes->loadFromFile(m->filePath.c_str());
+			}
 		}
 		renderTooltipForItem(IDS_IATTR_FILEPATH);
 		if (inst->type == Instance::InstanceType_ImageResource) {
@@ -316,6 +343,23 @@ void EngineGUI::DrawInspectorPanel(Instance* inst) {
 			if (DrawDropdown("ImageTextureLocation", (std::string*)ImageResource::textureTypeNames, 5) != -1) {
 				imgRes->textureType = currentSelectionDropdown - 1;
 				imgRes->loadFromFile(imgRes->filePath);
+			}
+		}
+
+		if (inst->type == Instance::InstanceType_ShaderResource) {
+			ShaderResource* m = (ShaderResource*)inst;
+			if (newInstanceSelected) {
+				printf("New instance selected, resetting dropdown to %d\n", ((ShaderResource*)inst)->shaderType);
+				if (((ShaderResource*)inst)->shaderType == GL_VERTEX_SHADER) {
+					currentSelectionDropdown = 0;
+				}
+				else if (((ShaderResource*)inst)->shaderType == GL_FRAGMENT_SHADER) {
+					currentSelectionDropdown = 1;
+				}
+			}
+			if (DrawDropdown("Shader Type", (std::string*)ShaderResource::shaderTypeNames, 2) != -1) {
+				m->shaderType = ShaderResource::shaderTypeEnums[currentSelectionDropdown];
+				m->loadFromFile(m->filePath.c_str());
 			}
 		}
 
@@ -438,6 +482,24 @@ Instance* EngineGUI::newInstanceFromType(int type, int p) {
 	else if (type == Instance::InstanceType_Collision3D) {
 		i = new Collision3D();
 	} 
+	else if (type == Instance::InstanceType_ShaderResource) {
+		i = new ShaderResource();
+	}
+	else if (type == Instance::InstanceType_ShaderProgram) {
+		i = new ShaderProgram();
+	}
+	else if (type == Instance::InstanceType_ImageResource) {
+		i = new ImageResource();
+	}
+	else if (type == Instance::InstanceType_Material) {
+		i = new Material();
+	}
+	else if (type == Instance::InstanceType_LuaResource) {
+		i = new LuaResource();
+	}
+	else if (type == Instance::InstanceType_Geometry) {
+		i = new Geometry();
+	}
 	if (i && p) {
 		i->setParent(Instance::getInstanceById(p)); 
 	}

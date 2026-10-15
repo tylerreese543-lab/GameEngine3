@@ -195,6 +195,7 @@ void LuaResource::InitializeLua() {
 	);
 	lua.new_usertype<MouseData>("MouseData",
 		"Position", sol::readonly(&MouseData::screenFull),
+		"Delta", sol::readonly(&MouseData::delta),
 		"SetMouseInputMode", &MouseData::setRawMouseInput,
 		"IsMouseDown", &MouseData::isMouseDown,
 		"IsRawMouseInput", &MouseData::isRawMouseInput,
@@ -315,7 +316,7 @@ void LuaResource::InitializeLua() {
 				return InstanceToSolObj(ts, self->getCamera());
 			},
 			[](Scene* self, sol::this_state ts, sol::object value) {
-				self->camera = (value.as<Camera*>()->getId());
+				self->currentCamera = (value.as<Camera*>()->getId());
 			}
 		)
 	);
@@ -624,7 +625,7 @@ void LuaResource::loadFromFile(std::string filepath) {
 
 void LuaResource::loadScript() {
 	
-	if (Scene::getCurrentScene()->isStudio && !isEngineScript) return;
+	if (Scene::isStudio && !isEngineScript) return;
 	env = sol::environment(lua, sol::create, lua.globals());
 	loaded_script = lua.load(source);
 	if (!loaded_script.valid()) {
@@ -687,9 +688,9 @@ sol::table LuaResource::SolTableFromIV(sol::this_state ts, std::set<Instance*>* 
 }
 
 int LuaResource::saveInstanceToFile(FILE* file) {
-	// Save the file path length and the file path string
-	size_t pathLength = filePath.size();
-	fwrite(filePath.c_str(), sizeof(char), pathLength + 1, file);
+	
+	int offset = 0;
+	offset += Resource::saveInstanceToFile(file);
 	if (strlen(source) > 0) {
 		size_t sourceLength = strlen(source);
 		fwrite(source, sizeof(char), sourceLength + 1, file);
@@ -705,11 +706,27 @@ int LuaResource::saveInstanceToFile(FILE* file) {
 int LuaResource::loadInstanceFromFile(void* data, int off) {
 	// Load the file path length and the file path string
 	int o = off;
-	char* path = (char*)offset(data, o);
-	filePath = std::string(path);
-	o += filePath.size() + 1;
+	o += Resource::loadInstanceFromFile(data, o);
 	char* src = (char*)offset(data, o);
 	source = new char[strlen(src) + 1];
 	strcpy_s((char*)source, strlen(src) + 1, src);
-	return 0; // Return 0 to indicate success
+	return o - off; // Return 0 to indicate success
+}
+
+int LuaResource::getNumSaveBytes() {
+	int size = 0;
+	size += Resource::getNumSaveBytes();
+	size += strlen(source) + 1; // +1 for null terminator
+	return size;
+}
+
+void LuaResource::finalizeLoad(inst_conv_map* conversionMap) {
+	Instance::finalizeLoad(conversionMap);
+	if (source && strlen(source) > 0 && !isEngineScript) {
+		loadScript();
+	}
+}
+
+bool LuaResource::omitFromSave() {
+	return isEngineScript;
 }
