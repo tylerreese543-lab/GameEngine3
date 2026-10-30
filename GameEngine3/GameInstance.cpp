@@ -34,7 +34,8 @@ void Instance::registerHierarchy() {
 	{ InstanceType_ProceduralGeometry, InstanceType_Geometry},
 	{ InstanceType_TextGeometry, InstanceType_Mesh },
 	{InstanceType_UIRootNode, InstanceType_Base},
-	{InstanceType_Audio, InstanceType_Base}
+	{InstanceType_Audio, InstanceType_Base},
+	{InstanceType_Folder, InstanceType_Base}
 	};
 }
 
@@ -74,7 +75,8 @@ const std::string Instance::instanceTypeNames[Instance::InstanceType_Count] = {
 	"ProceduralGeometry",
 	"Text",
 	"UIRoot",
-	"Audio"
+	"Audio",
+	"Folder"
 };
 Instance::Instance() {
 	instanceId = -1;
@@ -86,6 +88,11 @@ Instance::Instance() {
 	registered = false;
 	saveToFile = true;
 	registerInstance(this);
+}
+
+Folder::Folder() : Instance() {
+	name = "Folder";
+	type = InstanceType_Folder;
 }
 
 Instance::~Instance() {}

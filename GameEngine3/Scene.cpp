@@ -376,6 +376,9 @@ Instance* Scene::newInstanceFromType(int type) {
 			else if (type == Instance::InstanceType_Audio) {
 				inst = new Audio();
 			}
+			else if (type == Instance::InstanceType_Folder) {
+				inst = new Folder();
+			}
 			else {
 				debug_log("Error creating new Instance: unknown instance type %d\n", type);
 				return nullptr;
@@ -421,6 +424,7 @@ int UIRootNode::loadInstanceFromFile(void* data, int off) {
 }
 
 void UIRootNode::finalizeLoad(inst_conv_map* conversionMap) {
+	Instance::finalizeLoad(conversionMap);
 	this->camera = conversionMap->at(this->camera);
 }
 

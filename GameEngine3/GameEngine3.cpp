@@ -44,11 +44,9 @@ int main() {
 	UIRootNode* uir = new UIRootNode();
 	uir->setParent(scene);
 	scene->uiRoot = uir->getId();
-	Instance* resources = new Instance();
+	Folder* resources = new Folder();
 	resources->name = "Resources";
 	resources->setParent(scene);
-
-
 
 	ShaderProgram* debug_shader = new ShaderProgram("core://shader/debug_vertex.glsl", "core://shader/debug_fragment.glsl");
 	debug_shader->createProgram();

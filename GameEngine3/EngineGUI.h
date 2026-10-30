@@ -12,7 +12,7 @@ class EngineGUI {
 
 	static pugi::xml_document tooltipsXML;
 	static bool wasXMLSuccessful;
-	static const int EDITOR_ADD_INSTANCE[11];
+	static const int EDITOR_ADD_INSTANCE[12];
 	static void DrawInspectorPanel(Instance* inst);
 	static std::string selectedInstanceHash;
 	static std::vector<std::string> tooltipStrings;

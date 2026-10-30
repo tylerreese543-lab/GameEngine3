@@ -65,3 +65,89 @@ Vector3Value::Vector3Value() : Value() {
 Instance* Vector3Value::clone_this() {
 	return registerInstance(new Vector3Value(*this), true);
 }
+
+int IntegerValue::saveInstanceToFile(FILE* file) {
+	int offset = 0;
+	offset += fwrite(&value, sizeof(int), 1, file);
+
+	return offset;
+}
+
+int StringValue::saveInstanceToFile(FILE* file) {
+	int offset = 0;
+	offset += fwrite(value.c_str(), sizeof(char), value.length() + 1, file);
+
+	return offset;
+}
+
+int BooleanValue::saveInstanceToFile(FILE* file) {
+	int offset = 0;
+	offset += fwrite(&value, sizeof(bool), 1, file);
+
+	return offset;
+}
+
+int FloatValue::saveInstanceToFile(FILE* file) {
+	int offset = 0;
+	offset += fwrite(&value, sizeof(float), 1, file);
+
+	return offset;
+}
+
+int Vector3Value::saveInstanceToFile(FILE* file) {
+	int offset = 0;
+	offset += fwrite(&value, sizeof(vec3), 1, file);
+
+	return offset;
+}
+
+int InstanceValue::saveInstanceToFile(FILE* file) {
+	int offset = 0;
+	offset += fwrite(&value, sizeof(int), 1, file);
+
+	return offset;
+}
+
+int IntegerValue::getNumSaveBytes() { return sizeof(int); }
+int StringValue::getNumSaveBytes() { return sizeof(char) *(value.length() + 1); }
+int BooleanValue::getNumSaveBytes() { return sizeof(bool); }
+int FloatValue::getNumSaveBytes() { return sizeof(float); }
+int Vector3Value::getNumSaveBytes() { return sizeof(vec3); }
+int InstanceValue::getNumSaveBytes() { return sizeof(int); }
+
+int IntegerValue::loadInstanceFromFile(void* data, int off) {
+	int o = off;
+	memcpy(&value, offset(data, o), sizeof(int));
+	o += sizeof(int);
+	return o - off;
+}
+int StringValue::loadInstanceFromFile(void* data, int off) {
+	int o = off;
+	value = std::string((char*)offset(data, o));
+	o += value.length() + 1;
+	return o - off;
+}
+int BooleanValue::loadInstanceFromFile(void* data, int off) {
+	int o = off;
+	memcpy(&value, offset(data, o), sizeof(bool));
+	o += sizeof(bool);
+	return o - off;
+}
+int Vector3Value::loadInstanceFromFile(void* data, int off) {
+	int o = off;
+	memcpy(&value, offset(data, o), sizeof(vec3));
+	o += sizeof(vec3);
+	return o - off;
+}
+int InstanceValue::loadInstanceFromFile(void* data, int off) {
+	int o = off;
+	memcpy(&value, offset(data, o), sizeof(int));
+	o += sizeof(int);
+	return o - off;
+}
+
+void InstanceValue::finalizeLoad(inst_conv_map* conversionMap) {
+	//Update the reference to its new id
+	Instance::finalizeLoad(conversionMap);
+	this->value = conversionMap->at(this->value);
+}

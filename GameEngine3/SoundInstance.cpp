@@ -169,6 +169,7 @@ void Audio::setAudioSource(std::string audio) {
     alSourcei(audioId, AL_BUFFER, cachedAudioTracks[audioName].bufferId);
 }
 void Audio::finalizeLoad(inst_conv_map* conversionMap) {
+    Instance::finalizeLoad(conversionMap);
     this->group = conversionMap->at(this->group);
     //Re-init the source with the now loaded audio
     setAudioSource(this->audioName);

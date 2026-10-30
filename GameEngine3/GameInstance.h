@@ -55,6 +55,7 @@ public:
 		InstanceType_TextGeometry,
 		InstanceType_UIRootNode,
 		InstanceType_Audio,
+		InstanceType_Folder,
 		InstanceType_Count
 	};
 	static const std::string instanceTypeNames[InstanceType_Count];
@@ -101,3 +102,8 @@ public:
 };
 
 void* offset(void* ptr, size_t offset);
+
+class Folder : public Instance {
+public:
+	Folder();
+};

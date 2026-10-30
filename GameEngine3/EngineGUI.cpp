@@ -32,7 +32,8 @@ const int EngineGUI::EDITOR_ADD_INSTANCE[] = {
 	Instance::InstanceType_LuaResource,
 	Instance::InstanceType_Geometry,
 	Instance::InstanceType_TextGeometry,
-	Instance::InstanceType_Audio
+	Instance::InstanceType_Audio,
+	Instance::InstanceType_Folder
 };
 
 const std::string EngineGUI::placeholderNoInstance = "No instance selected";

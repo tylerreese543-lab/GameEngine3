@@ -254,7 +254,7 @@ void LuaResource::InitializeLua() {
 	);
 	// Register the GameInstance usertype
   //TODO: eventually abstract this to only have access to ID
-	auto InstanceType = lua.new_usertype<Instance>("Instance",
+	auto InstanceType = lua.new_usertype<Instance>(getInstanceNameFromType(InstanceType_Base),
 		// Expose variables
 		"Name", &Instance::name,
 		"ID", sol::property(&Instance::getId),
@@ -297,14 +297,14 @@ void LuaResource::InitializeLua() {
 		}
 	);
 	
-	auto ResourceType = lua.new_usertype<Resource>("Resource",
+	auto ResourceType = lua.new_usertype<Resource>(getInstanceNameFromType(InstanceType_Resource),
 		sol::base_classes, sol::bases<Instance>()
 	);
 	
-	auto LuaResourceType = lua.new_usertype<LuaResource>("Script",
+	auto LuaResourceType = lua.new_usertype<LuaResource>(getInstanceNameFromType(InstanceType_LuaResource),
 		sol::base_classes, sol::bases<Resource, Instance>()
 	);
-	auto CameraType = lua.new_usertype<Camera>("Camera",
+	auto CameraType = lua.new_usertype<Camera>(getInstanceNameFromType(InstanceType_Camera),
 		sol::base_classes, sol::bases<Instance>(),
 		"new", sol::factories([](sol::this_state ts) {
 			return InstanceToSolObj(ts, new Camera());
@@ -318,7 +318,7 @@ void LuaResource::InitializeLua() {
 		"MoveDirection2D", &Camera::moveDirection2D,
 		"LookMatrix", &Camera::look
 	);
-	auto SceneType = lua.new_usertype<Scene>("Scene",
+	auto SceneType = lua.new_usertype<Scene>(getInstanceNameFromType(InstanceType_Scene),
 		sol::base_classes, sol::bases<Instance>(),
 		"CurrentCamera", sol::property(
 			[](Scene* self, sol::this_state ts) {
@@ -330,13 +330,13 @@ void LuaResource::InitializeLua() {
 		)
 	);
 
-	auto GeometryType = lua.new_usertype<Geometry>("Geometry",
+	auto GeometryType = lua.new_usertype<Geometry>(getInstanceNameFromType(InstanceType_Geometry),
 		sol::base_classes, sol::bases<Resource, Instance>(),
 		"new", sol::factories([](sol::this_state ts) {
 			return InstanceToSolObj(ts, new Geometry());
 		})
 	);
-	auto MeshType = lua.new_usertype<Mesh>("Mesh",
+	auto MeshType = lua.new_usertype<Mesh>(getInstanceNameFromType(InstanceType_Mesh),
 		sol::base_classes, sol::bases<Instance>(),
 		"new", sol::factories([](sol::this_state ts) {
 			return InstanceToSolObj(ts, new Mesh());
@@ -363,7 +363,7 @@ void LuaResource::InitializeLua() {
 			}
 		)
 	);
-	auto TextGeometryType = lua.new_usertype<TextGeometry>("TextObject",
+	auto TextGeometryType = lua.new_usertype<TextGeometry>(getInstanceNameFromType(InstanceType_TextGeometry),
 		sol::base_classes, sol::bases<Mesh, Instance>(),
 		"new", sol::factories([](sol::this_state ts) {
 			return InstanceToSolObj(ts, new TextGeometry());
@@ -385,7 +385,7 @@ void LuaResource::InitializeLua() {
 			}
 		)
 	);
-	auto MaterialType = lua.new_usertype<Material>("Material",
+	auto MaterialType = lua.new_usertype<Material>(getInstanceNameFromType(InstanceType_Material),
 		sol::base_classes, sol::bases<Instance>(),
 		"new", sol::factories([](sol::this_state ts) {
 			return InstanceToSolObj(ts, new Material());
@@ -407,18 +407,18 @@ void LuaResource::InitializeLua() {
 			return (ImageResource*)getInstanceById(self->getTextureInstanceId(target));
 		}
 	);
-	auto ShaderProgramType = lua.new_usertype<ShaderProgram>("ShaderProgram",
+	auto ShaderProgramType = lua.new_usertype<ShaderProgram>(getInstanceNameFromType(InstanceType_ShaderProgram),
 		sol::base_classes, sol::bases<Resource, Instance>(),
 		"Create", &ShaderProgram::createProgram
 	);
 
-	auto ShaderResourceType = lua.new_usertype<ShaderResource>("ShaderResource",
+	auto ShaderResourceType = lua.new_usertype<ShaderResource>(getInstanceNameFromType(InstanceType_ShaderResource),
 		sol::base_classes, sol::bases<Resource, Instance>(),
 		"ShaderType", sol::readonly(&ShaderResource::shaderType),
 
 		"IsCompiled", &ShaderResource::isValid
 	);
-	auto ImageResourceType = lua.new_usertype<ImageResource>("ImageResource",
+	auto ImageResourceType = lua.new_usertype<ImageResource>(getInstanceNameFromType(InstanceType_ImageResource),
 		sol::base_classes, sol::bases<Resource, Instance>(),
 		"Width", &ImageResource::getWidth,
 		"Height", &ImageResource::getHeight,
@@ -433,7 +433,7 @@ void LuaResource::InitializeLua() {
 	);
 
 	//values :( at least they work...
-	auto IntValueType = lua.new_usertype<IntegerValue>("IntValue",
+	auto IntValueType = lua.new_usertype<IntegerValue>(getInstanceNameFromType(InstanceType_IntegerValue),
 		sol::base_classes, sol::bases<Value, Instance>(),
 		"new", sol::factories([](sol::this_state ts) {
 			return InstanceToSolObj(ts, new IntegerValue());
@@ -441,7 +441,7 @@ void LuaResource::InitializeLua() {
 		"Value", &IntegerValue::value
 	);
 
-	auto FloatValueType = lua.new_usertype<FloatValue>("FloatValue",
+	auto FloatValueType = lua.new_usertype<FloatValue>(getInstanceNameFromType(InstanceType_FloatValue),
 		sol::base_classes, sol::bases<Value, Instance>(),
 		"new", sol::factories([](sol::this_state ts) {
 			return InstanceToSolObj(ts, new FloatValue());
@@ -449,28 +449,28 @@ void LuaResource::InitializeLua() {
 		"Value", &FloatValue::value
 	);
 
-	auto StringValueType = lua.new_usertype<StringValue>("StringValue",
+	auto StringValueType = lua.new_usertype<StringValue>(getInstanceNameFromType(InstanceType_StringValue),
 		sol::base_classes, sol::bases<Value, Instance>(),
 		"new", sol::factories([](sol::this_state ts) {
 			return InstanceToSolObj(ts, new StringValue());
 		}),
 		"Value", &StringValue::value
 	);
-	auto BooleanValueType = lua.new_usertype<BooleanValue>("BoolValue",
+	auto BooleanValueType = lua.new_usertype<BooleanValue>(getInstanceNameFromType(InstanceType_BooleanValue),
 		sol::base_classes, sol::bases<Value, Instance>(),
 		"new", sol::factories([](sol::this_state ts) {
 			return InstanceToSolObj(ts, new BooleanValue());
 		}),
 		"Value", &BooleanValue::value
 	);
-	auto Vector3ValueType = lua.new_usertype<Vector3Value>("Vector3Value",
+	auto Vector3ValueType = lua.new_usertype<Vector3Value>(getInstanceNameFromType(InstanceType_Vector3Value),
 		sol::base_classes, sol::bases<Value, Instance>(),
 		"new", sol::factories([](sol::this_state ts) {
 			return InstanceToSolObj(ts, new Vector3Value());
 		}),
 		"Value", &Vector3Value::value
 	);
-	auto InstanceValueType = lua.new_usertype<InstanceValue>("InstanceValue",
+	auto InstanceValueType = lua.new_usertype<InstanceValue>(getInstanceNameFromType(InstanceType_InstanceValue),
 		sol::base_classes, sol::bases<Value, Instance>(),
 		"new", sol::factories([](sol::this_state ts) {
 			return InstanceToSolObj(ts, new InstanceValue());
@@ -485,7 +485,7 @@ void LuaResource::InitializeLua() {
 		)
 	);
 
-	auto Collision2DType = lua.new_usertype<Collision2D>("AABBCollision2D",
+	auto Collision2DType = lua.new_usertype<Collision2D>(getInstanceNameFromType(InstanceType_Collision2D),
 		sol::base_classes, sol::bases<Instance>(),
 		"new", sol::factories([](sol::this_state ts) {
 			return InstanceToSolObj(ts, new Collision2D());
@@ -523,7 +523,7 @@ void LuaResource::InitializeLua() {
 		}
 	);
 
-	auto Collision3DType = lua.new_usertype<Collision3D>("AABBCollision3D",
+	auto Collision3DType = lua.new_usertype<Collision3D>(getInstanceNameFromType(InstanceType_Collision3D),
 		sol::base_classes, sol::bases<Instance>(),
 		"new", sol::factories([](sol::this_state ts) {
 			return InstanceToSolObj(ts, new Collision3D());
@@ -576,7 +576,7 @@ void LuaResource::InitializeLua() {
 		}
 	);
 
-	auto ProceduralGeometryType = lua.new_usertype<ProceduralGeometry>("ProceduralGeometry",
+	auto ProceduralGeometryType = lua.new_usertype<ProceduralGeometry>(getInstanceNameFromType(InstanceType_ProceduralGeometry),
 		sol::base_classes, sol::bases<Geometry, Resource, Instance>(),
 		"new", sol::factories([](sol::this_state ts) {
 			return InstanceToSolObj(ts, new ProceduralGeometry());
@@ -607,13 +607,19 @@ void LuaResource::InitializeLua() {
 		"BufferUpdateMode", &ProceduralGeometry::bufferUpdateMode,
 		"IsDrawElements", &ProceduralGeometry::drawElements
 		);
-	auto AudioType = lua.new_usertype<InstanceValue>("Audio",
+	auto AudioType = lua.new_usertype<InstanceValue>(getInstanceNameFromType(InstanceType_Audio),
 		sol::base_classes, sol::bases<Value, Instance>(),
 		"new", sol::factories([](sol::this_state ts) {
 			return InstanceToSolObj(ts, new Audio());
 		}),
 		"Play", Audio::play,
 		"Stop", Audio::stop
+	);
+	auto FolderType = lua.new_usertype<Folder>(getInstanceNameFromType(InstanceType_Folder),
+		sol::base_classes, sol::bases<Instance>(),
+		"new", sol::factories([](sol::this_state ts) {
+			return InstanceToSolObj(ts, new Folder());
+		}),
 	);
 	//This freaking blows, but it works i guess
 	InstanceType[sol::meta_function::index] =			&LuaResource::__luaIndex;
@@ -639,6 +645,7 @@ void LuaResource::InitializeLua() {
 	GeometryType[sol::meta_function::index] =			&LuaResource::__luaIndex;
 	TextGeometryType[sol::meta_function::index] =		&LuaResource::__luaIndex;
 	AudioType[sol::meta_function::index] =				&LuaResource::__luaIndex;
+	FolderType[sol::meta_function::index] =				&LuaResource::__luaIndex;
 	
 }
 LuaResource::~LuaResource() {
@@ -697,7 +704,6 @@ void LuaResource::loadScript() {
 	env["KeyboardData"] = &(Graphics::getInstance()->keyboard_data);
 	env["GamepadData"] = &(Graphics::getInstance()->gamepad_data);
 	env["time"] = &glfwGetTime;
-	debug_log("Scene: %s\n", Scene::getCurrentScene()->name.c_str());
 	env["scene"] = InstanceToSolObj(sol::this_state(lua), Scene::getCurrentScene());
 	// 4. EXECUTE the attached function once to register your "Tick" block inside 'env'
 	sol::protected_function_result run_result = script_func();
