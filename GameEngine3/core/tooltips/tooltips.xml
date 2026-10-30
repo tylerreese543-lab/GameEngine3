@@ -29,7 +29,18 @@
 	<tooltip id="IDS_TOOLTIP_IMAGE_RESOURCE">
 		<text>A resource representing an image that can be used as a texture or for other purposes in the game engine.</text>
 	</tooltip>
-
+	<tooltip id="IDS_TOOLTIP_AUDIO">
+		<text>A instance that can play and load sound, either locally or relatively to the current camera.</text>
+	</tooltip>
+	<tooltip id="IDS_TOOLTIP_TEXT_GEOMETRY">
+		<text>A Mesh that generates it's own text geometry. Paired with a ShaderProgram that uses text glyphs.</text>
+	</tooltip>
+	<tooltip id="IDS_TOOLTIP_UI_ROOT_NODE">
+		<text>The root of all UI rendered. Paired with an orthographic camera for viewport.</text>
+	</tooltip>
+	<tooltip id="IDS_TOOLTIP_SCENE">
+		<text>The root of all instances in the session.</text>
+	</tooltip>
 	<tooltip id="IDS_IATTR_POSITION">
 		<text>The position of an object in the game world.</text>
 	</tooltip>
@@ -58,5 +69,52 @@
 	</tooltip>
 	<tooltip id="IDS_IATTR_FILEPATH">
 		<text>The file path of a resource in the game world.</text>
+	</tooltip>
+
+	<tooltip id="IDS_IATTR_ISCAMERAORTHOGRAPHIC">
+		<text>Whether the camera uses an orthographic.</text>
+	</tooltip>
+
+	<tooltip id="IDS_IATTR_START_CAMERA">
+		<text>The camera to be used when playing in runtime.</text>
+	</tooltip>
+
+	<tooltip id="IDS_IATTR_START_CAMERA">
+		<text>The camera to be used when playing in runtime.</text>
+	</tooltip>
+
+	<tooltip id="IDS_IATTR_SIZE">
+		<text>The bounds of a AABBCollider object.</text>
+	</tooltip>
+
+	<tooltip id="IDS_IATTR_MATTEX_DIFFUSE">
+		<text>The texture to be used for diffuse.</text>
+	</tooltip>
+	<tooltip id="IDS_IATTR_MATTEX_AO">
+		<text>The texture to be used for ambient occlusion.</text>
+	</tooltip>
+	<tooltip id="IDS_IATTR_MATTEX_SPECULAR">
+		<text>The texture to be used for specularity in reflections.</text>
+	</tooltip>
+	<tooltip id="IDS_IATTR_MATTEX_NORMAL">
+		<text>The texture to be used for normal mapping.</text>
+	</tooltip>
+
+	<tooltip id="IDS_IATTR_MATERIAL_SHADER">
+		<text>The shader to be used by the material.</text>
+	</tooltip>
+
+	<tooltip id="IDS_IATTR_MATERIAL_ISTRANSPARENT">
+		<text>Whether this material produces transparent surfaces. Automatically marked as transparent
+		regardless of checkbox status if the diffuse color is not fully opaque.
+		</text>
+	</tooltip>
+
+	<tooltip id="IDS_IATTR_MATERIAL_DIFFUSE_COLOR">
+		<text>The color of the material.</text>
+	</tooltip>
+
+	<tooltip id="IDS_IATTR_SHADER_TYPE">
+		<text>The type of shader that will be linked.</text>
 	</tooltip>
 </root>

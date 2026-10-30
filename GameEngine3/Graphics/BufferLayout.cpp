@@ -101,4 +101,6 @@ void BufferLayout::applyEX(Buffer* vbos, int numVBO) {
 	}
 
 	//printf("Str: %d, size: %d\n", getStride(), (int)elements.size());
+
+	delete[] offsets;
 }

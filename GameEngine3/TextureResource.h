@@ -35,4 +35,5 @@ public:
 
 	virtual int saveInstanceToFile(FILE* file);
 	virtual int loadInstanceFromFile(void* data, int off);
+	virtual int getNumSaveBytes();
 };

@@ -25,7 +25,7 @@ public:
 	virtual ~Geometry();
 
 	virtual Instance* clone_this();
-
+	virtual void updateBuffers();
 	virtual void render();
 	virtual void setVBOFlags(bool hasPositions, bool hasUV, bool hasNormal, bool hasColor, bool hasExtra = false);
 	virtual void autoSearchVBO();
@@ -93,10 +93,15 @@ public:
 
 class Mesh : public Instance {
 	//Finds the geometry based on this Mesh's children.
+protected:
+	virtual void setupRenderSettings(bool transparent = false, bool backfaceCulling = true);
 	virtual void calcTransform();
 	static std::set<Mesh*> render_objects;
+	static int distanceQsortCompareFunction(const void* a, const void* b);
+	static vec3 cameraPosition;
 public:
-
+	const static std::string renderLayerNames[eRenderLayer_MAX];
+	const static int renderLayerEnum[eRenderLayer_MAX];
 	vec3 rotation;
 	vec3 position;
 	vec3 scale;
@@ -104,15 +109,22 @@ public:
 	int geometry;
 	int material;
 	mat4 transform;
-	virtual void render(Camera* camera);
+	int renderLayer;
+	bool cull;
+	//Force the VAO to be regenerated due to shader change/resrt
+	bool VAODirty;
+	virtual void render(Camera* camera, bool transparent = false, int renderLayerTarget = eRenderLayer_World);
 
 
 	Mesh();
+
+	virtual int prepareMaterial(ShaderProgram** shader_out);
+
 	void setPosition(vec3 position);
 	void setRotation(vec3 rotation);
 	void setScale(vec3 scale);
 
-	static void renderAllMeshes(Camera* camera);
+	static void renderAllMeshes(Camera* camera_world, Camera* camera_ui);
 
 	virtual int destroy();
 

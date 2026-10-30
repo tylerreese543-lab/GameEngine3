@@ -78,6 +78,12 @@
     <ClInclude Include="EngineGUI.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="TextGeometry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SoundInstance.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="GameInstance.cpp">
@@ -165,6 +171,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\dependencies\PUGIXML\pugixml.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TextGeometry.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SoundInstance.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

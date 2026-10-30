@@ -5,8 +5,8 @@
 class Resource : public Instance {
 protected:
 	static std::map<std::string, std::string> resourceFilePathMacros;
-	static FILE* openResourceFile(std::string filepath, const char* mode = "rb");
 public:
+	static FILE* openResourceFile(std::string filepath, const char* mode = "rb");
 	static std::string resolveFilePath(const std::string& path);
 	std::string filePath;
 	Resource();

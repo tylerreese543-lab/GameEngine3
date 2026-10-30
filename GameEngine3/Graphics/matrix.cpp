@@ -152,7 +152,7 @@ mat4 mat4::transform(vec3 trans, vec3 scale, vec3 rot) {
 		0.0f, 0.0f, 0.0f, 1.0f
 	);
 
-	return translate * scl * mat4::yxz(rot.X, rot.Y, rot.Z);
+	return translate * mat4::yxz(rot.X, rot.Y, rot.Z) * scl;
 }
 
 col3::col3()

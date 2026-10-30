@@ -13,7 +13,6 @@ local useController = g ~= nil;
 
 function Tick(deltaTime)
 	
-
 	if KeyboardData:IsKeyDown(Enum.KeyCode.E) then
 		MouseData:SetMouseInputMode(false);
 	elseif KeyboardData:IsKeyDown(Enum.KeyCode.Q) then
@@ -25,7 +24,8 @@ function Tick(deltaTime)
 	else
 		speed = 10
 	end
-
+	camera = scene.CurrentCamera
+	if (camera) then
 	moveVector = Vector3.new(
 		(KeyboardData:IsKeyDown(Enum.KeyCode.D) and 1 or 0) - (KeyboardData:IsKeyDown(Enum.KeyCode.A) and 1 or 0), 
 		0, 
@@ -43,5 +43,5 @@ function Tick(deltaTime)
 			camera.Rotation.X = -math.pi * 0.5
 		end
 	end
-
+	end
 end

@@ -18,6 +18,7 @@ public:
 	float near_plane;
 	float far_plane;
 	float fov;
+	bool isOrthographic;
 	float aspect_ratio;
 	void setPosition(float x, float y, float z);
 	void setPlanes(float near, float far);

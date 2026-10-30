@@ -15,6 +15,7 @@ Camera::Camera() : Instance() {
 	setPlanes(0.1, 1000.0f);
 	fov = 90;
 	isEditorCamera = false;
+	isOrthographic = false;
 }
 
 
@@ -22,19 +23,35 @@ Camera::Camera(vec3 v) : Camera() {
 	setPosition(v.X, v.Y, v.Z);
 }
 void Camera::updateMatrices() {
-	setMat4Row(projection.m[0],
-		aspect_ratio * fovGL(), 0, 0, 0
-	);
-	setMat4Row(projection.m[1],
-		0, fovGL(), 0, 0
-	);
-	setMat4Row(projection.m[2],
-		0, 0, far_plane / (far_plane - near_plane), -(far_plane * near_plane) / (far_plane - near_plane)
-	);
-	setMat4Row(projection.m[3],
-		0, 0, 1, 0
-	);
 
+	if (isOrthographic) {
+		setMat4Row(projection.m[0],
+			fovGL() * aspect_ratio, 0, 0, 0
+		);
+		setMat4Row(projection.m[1],
+			0, fovGL(), 0, 0
+		);
+		setMat4Row(projection.m[2],
+			0, 0, 1.0 / (far_plane - near_plane), -near_plane / (far_plane - near_plane)
+		);
+		setMat4Row(projection.m[3],
+			0, 0, 0, 1.0f
+		);
+	}
+	else {
+		setMat4Row(projection.m[0],
+			aspect_ratio * fovGL(), 0, 0, 0
+		);
+		setMat4Row(projection.m[1],
+			0, fovGL(), 0, 0
+		);
+		setMat4Row(projection.m[2],
+			0, 0, far_plane / (far_plane - near_plane), -(far_plane * near_plane) / (far_plane - near_plane)
+		);
+		setMat4Row(projection.m[3],
+			0, 0, 1, 0
+		);
+	}
 	look = mat3::yxz(-rotation.X, -rotation.Y, -rotation.Z);
 	moveDirection2D = mat3::yrot(-rotation.Y);
 }
@@ -60,6 +77,7 @@ int Camera::saveInstanceToFile(FILE* file) {
 	fwrite(&far_plane, sizeof(float), 1, file);
 	fwrite(&fov, sizeof(float), 1, file);
 	fwrite(&aspect_ratio, sizeof(float), 1, file);
+	fwrite(&isOrthographic, sizeof(bool), 1, file);
 	return 0; //TODO: return the size of the data written to the file
 }
 
@@ -78,6 +96,8 @@ int Camera::loadInstanceFromFile(void* data, int off) {
 	o += sizeof(float);
 	aspect_ratio = *(float*)offset(data, o);
 	o += sizeof(float);
+	isOrthographic = *(bool*)offset(data, o);
+	o += sizeof(bool);
 	updateMatrices();
 	return o - off; // Return the number of bytes read
 }
@@ -91,15 +111,18 @@ Instance* Camera::clone_this() {
 	newCamera->fov = this->fov;
 	newCamera->aspect_ratio = this->aspect_ratio;
 	newCamera->isEditorCamera = this->isEditorCamera;
+	newCamera->isOrthographic = this->isOrthographic;
 	newCamera->updateMatrices();
 	return newCamera;
 }
 
 void Camera::update(float deltaTime, bool isStudio) {
+	updateMatrices();
+	aspect_ratio = Graphics::getInstance()->getAspectRatio();
 }
 
 int Camera::getNumSaveBytes() {
-	return sizeof(vec3) * 2 + sizeof(float) * 4 + Instance::getNumSaveBytes();
+	return sizeof(vec3) * 2 + sizeof(float) * 4 + Instance::getNumSaveBytes() + sizeof(bool);
 }
 
 bool Camera::omitFromSave() {

@@ -31,7 +31,10 @@ void Instance::registerHierarchy() {
 
 	{InstanceType_Collision2D, InstanceType_Base},
 	{InstanceType_Collision3D, InstanceType_Base},
-	{ InstanceType_ProceduralGeometry, InstanceType_Geometry}
+	{ InstanceType_ProceduralGeometry, InstanceType_Geometry},
+	{ InstanceType_TextGeometry, InstanceType_Mesh },
+	{InstanceType_UIRootNode, InstanceType_Base},
+	{InstanceType_Audio, InstanceType_Base}
 	};
 }
 
@@ -68,7 +71,10 @@ const std::string Instance::instanceTypeNames[Instance::InstanceType_Count] = {
 	"Vector3Value",
 	"AABBCollision2D",
 	"AABBCollision3D",
-	"ProceduralGeometry"
+	"ProceduralGeometry",
+	"Text",
+	"UIRoot",
+	"Audio"
 };
 Instance::Instance() {
 	instanceId = -1;
@@ -136,13 +142,15 @@ int Instance::setParent(Instance* p) {
 	return 0;
 }
 
-Instance* Instance::getChildFromName(const std::string& name) {
+Instance* Instance::getChildFromName(const std::string& n) {
+	//printf("Query for  %s, Id: %d\n", this->name.c_str(), getId());
 	for (Instance* child : children) {
-		if (child->name == name) {
+		//printf("Child Name: %s, Id: %d\n", child->name.c_str(), child->getId());
+		if (child->name == n) {
 			return child;
 		}
 	}
-	//printf("ERROR: Child with name '%s' not found.\n", name.c_str());
+	//printf("ERROR: Child with name '%s' not found.\n", n.c_str());
 	return nullptr; // Child not found
 }
 Instance* Instance::getChildFromClass(const std::string& className) {
@@ -263,10 +271,6 @@ void Instance::listChildren() {
 void Instance::update(float deltaTime, bool isStudio) {}
 
 int Instance::saveInstanceToFile(FILE* file) {
-	int tag = LOAD_INSTANCE_TAG;
-	int numBytes = this->getNumSaveBytes();
-	fwrite(&tag, sizeof(int), 1, file);
-	fwrite(&numBytes, sizeof(int), 1, file);
 	fwrite(&type, sizeof(int), 1, file);
 	fwrite(&instanceId, sizeof(int), 1, file);
 	fwrite(name.c_str(), sizeof(char), name.size() + 1, file);
@@ -306,7 +310,6 @@ void Instance::finalizeLoad(std::map<int, int>* conversionMap) {
 
 int Instance::getNumSaveBytes() {
 	int size = 0;
-	size += sizeof(int); // type
 	size += sizeof(int); // instanceId
 	// name bytes written as C-string (null-terminated)
 	size += (int)((name.size() + 1) * sizeof(char)); // name data (including null)

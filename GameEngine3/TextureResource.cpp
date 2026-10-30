@@ -191,3 +191,7 @@ int ImageResource::loadInstanceFromFile(void* data, int off) {
 
 	return o - off;
 }
+
+int ImageResource::getNumSaveBytes() {
+	return Resource::getNumSaveBytes() + (5 * sizeof(int)) + (5 * sizeof(GLenum));
+}

@@ -9,6 +9,7 @@ class Material : public Instance
 	ImageResource* isImage(Instance* inst);
 	ShaderProgram* isShader(Instance* inst);
 
+	const static std::string containsMaterialTexture[eMaterialTexture_MAX];
 	int textures[eMaterialTexture_MAX];
 	int shader;
 public:
@@ -18,6 +19,8 @@ public:
 
 	vec3 diffuseColor;
 	float specularity;
+	//Whether or not this material will shade objects non-opaquely.
+	bool isTransparent;
 	
 	Material();
 

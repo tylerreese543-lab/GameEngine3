@@ -1,3 +1,0 @@
-function Tick(deltaTime)
-	print(5 + 3)
-end

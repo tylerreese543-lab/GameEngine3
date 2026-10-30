@@ -10,8 +10,6 @@
 
 #define GAME_VERSION_STRING "0.1.0"
 
-#define LOAD_INSTANCE_TAG 10
-
 #include <queue>
 
 #include "Engine/tooltips.h"
@@ -54,6 +52,9 @@ public:
 		InstanceType_Collision2D,
 		InstanceType_Collision3D,
 		InstanceType_ProceduralGeometry,
+		InstanceType_TextGeometry,
+		InstanceType_UIRootNode,
+		InstanceType_Audio,
 		InstanceType_Count
 	};
 	static const std::string instanceTypeNames[InstanceType_Count];

@@ -1,5 +1,18 @@
 #include "Mesh.h"
 std::set<Mesh*> Mesh::render_objects;
+vec3 Mesh::cameraPosition;
+
+
+const std::string Mesh::renderLayerNames[] = {
+	"None",
+	"World",
+	"UI",
+};
+const int Mesh::renderLayerEnum[] = {
+	eRenderLayer_None,
+	eRenderLayer_World,
+	eRenderLayer_UI
+};
 Geometry::Geometry() : Resource() {
 	name = "Geometry";
 	type = InstanceType_Geometry;
@@ -119,7 +132,12 @@ Mesh::Mesh() : Instance() {
 	material = -1;
 	visible = true;
 
+	VAODirty = true;
 	render_objects.insert(this);
+
+	cull = false;
+
+	renderLayer = eRenderLayer_World;
 }
 
 void Mesh::setPosition(vec3 pos) {
@@ -138,8 +156,9 @@ void Mesh::calcTransform() {
 	transform = mat4::transform(position, scale, rotation);
 }
 
-void Mesh::render(Camera* camera) {
+void Mesh::render(Camera* camera, bool transparent, int renderLayerTarget) {
 	
+	if (renderLayer != renderLayerTarget) return;
 	if (!visible) return;
 	if (!isIdValid(geometry)) {
 		//printf("Finding geometry\n");
@@ -149,41 +168,30 @@ void Mesh::render(Camera* camera) {
 		//printf("Finding procedural geometry\n");
 		geometry = getChildIdFromType(InstanceType_ProceduralGeometry);
 	}
-	if (!isIdValid(material)) {
-		material = getChildIdFromType(InstanceType_Material);
-	}
 	if (geometry == -1) {
-		printf("Abort rendering of '%s' - has no geometry bound.\n", name.c_str());
-		return;
-	}
-	if (material == -1) {
-		printf("Abort rendering of '%s' - has no material bound.\n", name.c_str());
-		return;
-	}
-	if (camera == nullptr) {
-		printf("Abort rendering of '%s' - has no camera attached.\n", name.c_str());
-		return;
-	}
-	Material* m = (Material*)getInstanceById(material);
-	ShaderProgram* program = (ShaderProgram*)getInstanceById(m->getShaderInstanceId());
-	if (!program) {
-		printf("Abort rendering of '%s' - material has no shader program attached.\n", name.c_str());
+		debug_log("Abort rendering of '%s' - has no geometry bound.\n", name.c_str());
 		return;
 	}
 
+	if (camera == nullptr) {
+		debug_log("Abort rendering of '%s' - has no camera attached.\n", name.c_str());
+		return;
+	}
+	ShaderProgram* program = nullptr;
+	if (prepareMaterial(&program) != 0) {
+		return;
+	}
 	Geometry* g = (Geometry*)getInstanceById(geometry);
 
-	if (!isInstanceOf(g->type, InstanceType_Geometry)) return;
-	if (g->vao == 0) {
+		if (!isInstanceOf(g->type, InstanceType_Geometry)) return;
+	if (g->vao == 0 || VAODirty) {
 		g->generateVAO(&program->layout);
+		VAODirty = false;
 	}
-	//printf("VAO for ID: %d: %d\n", geometry, g->vao);
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LEQUAL);
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_FRONT);
+	
+
+	setupRenderSettings(transparent, cull);
 	calcTransform();
-	m->applyMaterial();
 	program->setUniformSMat(program->shaderUniformNames[eSUniform_ModelTransformMatrix], transform, GL_TRUE, 4);
 	program->setUniform3f(program->shaderUniformNames[eSUniform_CameraPosition], camera->position);
 	program->setUniformSMat(program->shaderUniformNames[eSUniform_CameraLookMatrix], camera->look, GL_TRUE, 3);
@@ -217,6 +225,7 @@ void Geometry::loadFromFile(std::string filepath, int meshID, int ImporterFlags)
 	int sizeColor = mesh->mNumVertices * 3;
 	int sizeIndices = mesh->mNumFaces * 3;
 
+	clearBuffers();
 	//TODO: add interleaved load capabilties
 	if (mesh->HasPositions()) {
 		vbos[eVBO_Positions].data = malloc(sizePos * sizeof(float));
@@ -264,7 +273,7 @@ void Geometry::loadFromFile(std::string filepath, int meshID, int ImporterFlags)
 	TODO: Actually expand these dynamically to fit any extra UV / Color data in the mesh file.
 	Gives more creative freedom to developers in shaders
 	*/
-
+	updateBuffers();
 	autoSearchVBO();
 }
 
@@ -287,14 +296,76 @@ int Geometry::loadInstanceFromFile(void* data, int off) {
 	loadFromFile(filePath);
 	return o - off;
 }
-void Mesh::renderAllMeshes(Camera* camera) {
+
+int Mesh::distanceQsortCompareFunction(const void* a, const void* b) {
+	//a, b = Mesh**
+	Mesh* MeshA = *(Mesh**)a;
+	Mesh* MeshB = *(Mesh**)b;
+
+	float distanceA = (Mesh::cameraPosition - MeshA->position).gmag();
+	float distanceB = (Mesh::cameraPosition - MeshB->position).gmag();
+
+	if (distanceA > distanceB) return -1;
+	if (distanceA < distanceB) return 1;
+	return 0;
+
+
+}
+void Mesh::renderAllMeshes(Camera* camera, Camera* ui) {
 	if (!camera)  {
 		debug_log("No camera provided for rendering meshes. Aborting render.\n");
 		return;
 	}
+	std::vector<Mesh*> transparent_objects; // To be sorted by distance
+	std::set<Mesh*> ui_objects;
 	for (Mesh* m : render_objects) {
-		debug_log("Rendering mesh '%s' (ID: %d) with geometry ID: %d and material ID: %d\n", m->name.c_str(), m->instanceId, m->geometry, m->material);
-		m->render(camera);
+		//debug_log("Rendering mesh '%s' (ID: %d) with geometry ID: %d and material ID: %d\n", m->name.c_str(), m->instanceId, m->geometry, m->material);
+
+		Material* material = (Material*)getInstanceById(m->material);
+		if (m->renderLayer != eRenderLayer_World) {
+			if (m->renderLayer == eRenderLayer_UI) {
+				ui_objects.insert(m);
+			}
+			continue;
+		}
+		if (material) {
+			if (material->isTransparent == true) {
+				transparent_objects.push_back(m);
+			}
+			else {
+				m->render(camera);
+			}
+		}
+	}
+	Mesh::cameraPosition = camera->position;
+	std::qsort(transparent_objects.data(), transparent_objects.size(), sizeof(Mesh*), Mesh::distanceQsortCompareFunction);
+	for (Mesh* m : transparent_objects) {
+		//debug_log("Rendering mesh '%s' (ID: %d) with geometry ID: %d and material ID: %d\n", m->name.c_str(), m->instanceId, m->geometry, m->material);
+
+		m->render(camera, true);
+	}
+	transparent_objects.clear();
+	if (ui) {
+		for (Mesh* m : ui_objects) {
+			//debug_log("Rendering mesh '%s' (ID: %d) with geometry ID: %d and material ID: %d\n", m->name.c_str(), m->instanceId, m->geometry, m->material);
+
+			Material* material = (Material*)getInstanceById(m->material);
+			if (material) {
+				if (material->isTransparent == true) {
+					transparent_objects.push_back(m);
+				}
+				else {
+					m->render(ui, false, eRenderLayer_UI);
+				}
+			}
+		}
+		Mesh::cameraPosition = ui->position;
+		std::qsort(transparent_objects.data(), transparent_objects.size(), sizeof(Mesh*), Mesh::distanceQsortCompareFunction);
+		for (Mesh* m : transparent_objects) {
+			//debug_log("Rendering mesh '%s' (ID: %d) with geometry ID: %d and material ID: %d\n", m->name.c_str(), m->instanceId, m->geometry, m->material);
+
+			m->render(ui, true, eRenderLayer_UI);
+		}
 	}
 }
 
@@ -303,7 +374,7 @@ int Geometry::getNumSaveBytes() {
 }
 
 int Mesh::getNumSaveBytes() {
-	return Instance::getNumSaveBytes() + sizeof(vec3) * 3 + sizeof(int) * 1 + sizeof(bool);
+	return Instance::getNumSaveBytes() + (sizeof(vec3) * 3) + (2 * sizeof(int)) + (2 * sizeof(bool));
 }
 
 int Mesh::destroy() {
@@ -326,6 +397,7 @@ int Mesh::saveInstanceToFile(FILE* file) {
 	offset += fwrite(&geometry, sizeof(int), 1, file);
 	offset += fwrite(&material, sizeof(int), 1, file);
 	offset += fwrite(&visible, sizeof(bool), 1, file);
+	offset += fwrite(&cull, sizeof(bool), 1, file);
 	return offset;
 }
 
@@ -344,6 +416,8 @@ int Mesh::loadInstanceFromFile(void* data, int off) {
 	material = *(int*)offset(data, o);
 	o += sizeof(int);
 	visible = *(bool*)offset(data, o);
+	o += sizeof(bool);
+	cull = *(bool*)offset(data, o);
 	o += sizeof(bool);
 	debug_log("Loaded geometry ID: %d, material ID: %d, visible: %d\n", geometry, material, visible);
 	return o - off;
@@ -558,7 +632,7 @@ void ProceduralGeometry::generateBuffers() {
 			memcpy(ebo.data, indices.data(), ebo.size);
 		}
 	}
-
+	
 	buffersDirty = false;
 }
 
@@ -566,7 +640,11 @@ void ProceduralGeometry::setNumExtraFloats(int num) {
 	if (num < 0 or num >= MAX_EXTRA_FLOATS) return;
 	numExtraFloats = num;
 }
-
+void Geometry::updateBuffers() {
+	for (int i = 0; i < eVBO_MAX; ++i) {
+		vbos[i].update();
+	}
+}
 Instance* ProceduralGeometry::clone_this() {
 	ProceduralGeometry* g = (ProceduralGeometry*)registerInstance(new ProceduralGeometry(*this), true);
 	g->vao = 0;
@@ -658,4 +736,60 @@ int ProceduralGeometry::getNumSaveBytes() {
 	size += sizeof(int) * indices.size();
 	size += sizeof(float) * numExtraFloats * vertices.size();
 	return size;
+}
+
+void Mesh::setupRenderSettings(bool transparent, bool backfaceCulling) {
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
+	if (backfaceCulling) {
+		glEnable(GL_CULL_FACE);
+		glCullFace(GL_FRONT);
+	}
+	else {
+		glDisable(GL_CULL_FACE);
+	}
+
+	if (transparent) {
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glDepthMask(GL_FALSE);
+	}
+	else {
+		glDisable(GL_BLEND);
+		glDepthMask(GL_TRUE);
+	}
+
+	if (renderLayer == eRenderLayer_UI) {
+		glDisable(GL_DEPTH_TEST);
+		glDepthMask(GL_FALSE);
+		glDisable(GL_CULL_FACE);
+	}
+}
+
+int Mesh::prepareMaterial(ShaderProgram** shaderOut) {
+	Instance* m = getInstanceById(material);
+	if (!m) {
+		debug_log("No valid shader or material for '%s'. Aborting render.\n", name.c_str());
+		return -1;
+	}
+	if (!isInstanceOf(m->type, InstanceType_Material) && !isInstanceOf(m->type, InstanceType_ShaderProgram)) {
+		debug_log("Instance referenced as material/shader is not valid. Aborting render (type = %d).\n", m->type);
+		return -1;
+	}
+	ShaderProgram* program = nullptr;
+	if (isInstanceOf(m->type, InstanceType_ShaderProgram)) {
+		program = (ShaderProgram*)m;
+		program->useProgram();
+	}
+	else if (isInstanceOf(m->type, InstanceType_Material)) {
+		Material* mat = (Material*)m;
+		program = (ShaderProgram*)getInstanceById(mat->getShaderInstanceId());
+		mat->applyMaterial();
+	}
+
+	*shaderOut = program;
+	if (!program) {
+		return -1;
+	}
+	return 0;
 }

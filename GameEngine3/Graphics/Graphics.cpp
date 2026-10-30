@@ -53,6 +53,7 @@ int Graphics::initializeWindow(int width, int height, const char* title) {
 }
 
 void Graphics::clearWindow() {
+	glDepthMask(GL_TRUE); 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	deltaTime = (glfwGetTime() - lastFrameTime);
 	currentFPS = 1.0 / deltaTime;

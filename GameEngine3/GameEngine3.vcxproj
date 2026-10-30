@@ -188,7 +188,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>GLEW_STATIC;STUDIO_EDITOR;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)dependencies\ASSIMPlib\include;$(SolutionDir)dependencies;$(SolutionDir)dependencies\sol\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)dependencies\ASSIMPlib\include;$(SolutionDir)dependencies;$(SolutionDir)dependencies\sol\src;$(SolutionDir)dependencies\freetype-2.15.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ShowIncludes>false</ShowIncludes>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
@@ -196,8 +196,8 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)dependencies\GLFW_3.4\lib-vc2022;$(SolutionDir)dependencies\GLEW_2.1\lib;$(SolutionDir)dependencies\ASSIMPlib\lib;$(SolutionDir)dependencies\sol;$(SolutionDir)dependencies\sol\src;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>LuaLibrary.lib;assimp32.lib;opengl32.lib;glew32s.lib;glfw3.lib;gdi32.lib;user32.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)dependencies\GLFW_3.4\lib-vc2022;$(SolutionDir)dependencies\GLEW_2.1\lib;$(SolutionDir)dependencies\ASSIMPlib\lib;$(SolutionDir)dependencies\sol;$(SolutionDir)dependencies\sol\src;$(SolutionDir)dependencies\freetype-2.15.0;$(SolutionDir)dependencies\OPENAL_1.1\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>openal32.lib;efx.lib;freetype.lib;LuaLibrary.lib;assimp32.lib;opengl32.lib;glew32s.lib;glfw3.lib;gdi32.lib;user32.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_Runtime|x64'">
@@ -206,7 +206,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>GLEW_STATIC;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)dependencies\ASSIMPlib\include;$(SolutionDir)dependencies;$(SolutionDir)dependencies\sol\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)dependencies\ASSIMPlib\include;$(SolutionDir)dependencies;$(SolutionDir)dependencies\sol\src;$(SolutionDir)dependencies\freetype-2.15.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ShowIncludes>false</ShowIncludes>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
@@ -214,8 +214,8 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)dependencies\GLFW_3.4\lib-vc2022;$(SolutionDir)dependencies\GLEW_2.1\lib;$(SolutionDir)dependencies\ASSIMPlib\lib;$(SolutionDir)dependencies\sol;$(SolutionDir)dependencies\sol\src;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>LuaLibrary.lib;assimp32.lib;opengl32.lib;glew32s.lib;glfw3.lib;gdi32.lib;user32.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)dependencies\GLFW_3.4\lib-vc2022;$(SolutionDir)dependencies\GLEW_2.1\lib;$(SolutionDir)dependencies\ASSIMPlib\lib;$(SolutionDir)dependencies\sol;$(SolutionDir)dependencies\sol\src;$(SolutionDir)dependencies\freetype-2.15.0;$(SolutionDir)dependencies\OPENAL_1.1\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>openal32.lib;efx.lib;freetype.lib;LuaLibrary.lib;assimp32.lib;opengl32.lib;glew32s.lib;glfw3.lib;gdi32.lib;user32.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -226,7 +226,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>GLEW_STATIC;STUDIO_EDITOR;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)dependencies\ASSIMPlib\include;$(SolutionDir)dependencies;$(SolutionDir)dependencies\sol\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)dependencies\ASSIMPlib\include;$(SolutionDir)dependencies;$(SolutionDir)dependencies\sol\src;$(SolutionDir)dependencies\freetype-2.15.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ShowIncludes>false</ShowIncludes>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
@@ -234,8 +234,8 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)dependencies\GLFW_3.4\lib-vc2022;$(SolutionDir)dependencies\GLEW_2.1\lib;$(SolutionDir)dependencies\ASSIMPlib\lib;$(SolutionDir)dependencies\sol;$(SolutionDir)dependencies\sol\src;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>LuaLibrary.lib;assimp32.lib;opengl32.lib;glew32s.lib;glfw3.lib;gdi32.lib;user32.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)dependencies\GLFW_3.4\lib-vc2022;$(SolutionDir)dependencies\GLEW_2.1\lib;$(SolutionDir)dependencies\ASSIMPlib\lib;$(SolutionDir)dependencies\sol;$(SolutionDir)dependencies\sol\src;$(SolutionDir)dependencies\freetype-2.15.0;$(SolutionDir)dependencies\OPENAL_1.1\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>openal32.lib;efx.lib;freetype.lib;LuaLibrary.lib;assimp32.lib;opengl32.lib;glew32s.lib;glfw3.lib;gdi32.lib;user32.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_Runtime|x64'">
@@ -246,7 +246,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>GLEW_STATIC;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)dependencies\ASSIMPlib\include;$(SolutionDir)dependencies;$(SolutionDir)dependencies\sol\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)dependencies\ASSIMPlib\include;$(SolutionDir)dependencies;$(SolutionDir)dependencies\sol\src;$(SolutionDir)dependencies\freetype-2.15.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ShowIncludes>false</ShowIncludes>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
@@ -254,8 +254,8 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)dependencies\GLFW_3.4\lib-vc2022;$(SolutionDir)dependencies\GLEW_2.1\lib;$(SolutionDir)dependencies\ASSIMPlib\lib;$(SolutionDir)dependencies\sol;$(SolutionDir)dependencies\sol\src;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>LuaLibrary.lib;assimp32.lib;opengl32.lib;glew32s.lib;glfw3.lib;gdi32.lib;user32.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)dependencies\GLFW_3.4\lib-vc2022;$(SolutionDir)dependencies\GLEW_2.1\lib;$(SolutionDir)dependencies\ASSIMPlib\lib;$(SolutionDir)dependencies\sol;$(SolutionDir)dependencies\sol\src;$(SolutionDir)dependencies\freetype-2.15.0;$(SolutionDir)dependencies\OPENAL_1.1\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>openal32.lib;efx.lib;freetype.lib;LuaLibrary.lib;assimp32.lib;opengl32.lib;glew32s.lib;glfw3.lib;gdi32.lib;user32.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -278,6 +278,8 @@
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="RenderObject.h" />
     <ClInclude Include="Resource.h" />
+    <ClInclude Include="SoundInstance.h" />
+    <ClInclude Include="TextGeometry.h" />
     <ClInclude Include="TextureResource.h" />
     <ClInclude Include="Value.h" />
   </ItemGroup>
@@ -309,9 +311,19 @@
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="ScriptEvent.cpp" />
     <ClCompile Include="Shader.cpp" />
+    <ClCompile Include="SoundInstance.cpp" />
+    <ClCompile Include="TextGeometry.cpp" />
     <ClCompile Include="TextureResource.cpp" />
     <ClCompile Include="Value.cpp" />
   </ItemGroup>
+	<ItemGroup>
+		<None Update="assets\**\*.*">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+			<None Update="core\**\*.*">
+				<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			</None>
+	</ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

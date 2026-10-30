@@ -2,7 +2,6 @@
 #include "GameInstance.h"
 #include "Resource.h"
 #include "ScriptEvent.h"
-
 class LuaResource : public Resource {
 public:
 	static sol::state lua;

@@ -37,6 +37,7 @@ public:
 class ShaderProgram : public Resource {
 private:
 	int U(std::string uniform);
+
 public:
 	std::string shaderAttributeNames[eVAttribute_MAX];
 	std::string shaderUniformNames[eSUniform_MAX];
@@ -47,15 +48,18 @@ public:
 	BufferLayout layout; //Generated from the vertex shader's input layout
 	int attachShader(ShaderResource* shader);
 	int linkProgram();
-	int createProgram();
+	//reloadShaders -> force-reload the shaders (to fully re-compile the shader if any changes are made to the sources)
+	int createProgram(bool reloadShaders = false);
 	int useProgram();
 
 	void setDefaultVertexAttribute(int index, std::string name);
 	void setDefaultShaderUniform(int index, std::string name);
 	void setDefaultMaterialTexture(int index, std::string name);
 	//Uniform
-	void bindTexture(std::string uniform, ImageResource* tex, int type = -1);
+	int bindTexture(std::string uniform, ImageResource* tex, int type = -1);
 	void unbindTexture(std::string uniform, int type);
+	void unbindTextureArray(std::string uniform, int type);
+	void setUniform1i(std::string uniform, int f0);
 	void setUniform1f(std::string uniform, float f0);
 	void setUniform2f(std::string uniform, float f0, float f1);
 	void setUniform2f(std::string uniform, vec2 v);
@@ -74,4 +78,6 @@ public:
 	virtual int getNumSaveBytes();
 
 	virtual void finalizeLoad(inst_conv_map* conversionMap);
+
+	virtual Instance* clone_this();
 };

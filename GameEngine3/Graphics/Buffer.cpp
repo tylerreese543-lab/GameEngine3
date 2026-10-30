@@ -60,7 +60,9 @@ int Buffer::setDataSub(GLintptr offset, GLsizeiptr size, const void* data) {
 }
 
 int Buffer::update() {
+	bind();
 	glBufferData(target, size, data, usage);
+	unbind();
 	return 0;
 }
 

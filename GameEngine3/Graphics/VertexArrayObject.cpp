@@ -1,5 +1,9 @@
 #include "VertexArrayObject.h"
 int GenVAO(GLuint* vao, Buffer* vbo, Buffer* ebo, BufferLayout* layout, int numVBO) {
+	if (*vao != 0) {
+		glDeleteVertexArrays(1, vao);
+		*vao = 0;
+	}
 	glGenVertexArrays(1, vao);
 	glBindVertexArray(*vao);
 	layout->applyEX(vbo, numVBO);

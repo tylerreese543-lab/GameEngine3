@@ -96,6 +96,7 @@ ShaderProgram::ShaderProgram() : Resource() {
 	setDefaultShaderUniform(eSUniform_Material_DiffuseColor,		"m_DiffuseColor");
 	setDefaultShaderUniform(eSUniform_Material_Specularity,			"m_Specularity");
 	setDefaultShaderUniform(eSUniform_CurrentTime,					"u_CurrentTime");
+	setDefaultShaderUniform(eSUniform_Text_Font,					"tx_TextGlyphs");
 
 	setDefaultMaterialTexture(eMaterialTexture_Diffuse,				"t_Diffuse");
 	setDefaultMaterialTexture(eMaterialTexture_AmbientOcclusion,	"t_AmbientOcclusion");
@@ -138,14 +139,13 @@ int ShaderProgram::linkProgram() {
 	return 0;
 }
 
-int ShaderProgram::createProgram() {
+int ShaderProgram::createProgram(bool reloadShaders) {
 
 	if (id != 0) {
 		glDeleteProgram(id);
 		id = 0;
 	}
 	id = glCreateProgram();
-	printf("Creating program... (id = %d)\n", id);
 	std::vector<ShaderResource*> shaders;
 	for (Instance* child : children) {
 		if (child->type != InstanceType_ShaderResource) {
@@ -155,6 +155,9 @@ int ShaderProgram::createProgram() {
 	}
 
 	for (ShaderResource* shader : shaders) {
+		if (reloadShaders) {
+			shader->loadFromFile(shader->filePath.c_str());
+		}
 		shader->compileShader();
 		attachShader(shader);
 	}
@@ -241,6 +244,9 @@ int ShaderProgram::U(std::string uniform) {
 	}
 	return glGetUniformLocation(id, uniform.c_str());
 }
+void ShaderProgram::setUniform1i(std::string uniform, int f0) {
+	glUniform1i(U(uniform), f0);
+}
 void ShaderProgram::setUniform1f(std::string uniform, float f0) {
 	glUniform1f(U(uniform), f0);
 }
@@ -278,17 +284,19 @@ void ShaderProgram::setUniformSMat(std::string uniform, const float* fv, bool tr
 	}
 }
 
-void ShaderProgram::bindTexture(std::string uniform, ImageResource* tex, int type) {
+int ShaderProgram::bindTexture(std::string uniform, ImageResource* tex, int type) {
 	int textureSlot = -1;
-	if (U(uniform) == -1) return;
+	if (U(uniform) == -1) return -1;
 	//printf("%s -%d\n", uniform.c_str(), U(uniform));
 	textureSlot = type;
 	if (tex && textureSlot != -1) {
 		if (tex->textureType == type || type == -1) {
 			tex->BindSlot(textureSlot);
 			glUniform1i(U(uniform), textureSlot);
+			return 0;
 		}
 	}
+	return -1;
 }
 void ShaderProgram::unbindTexture(std::string uniform, int type) {
 	int textureSlot = -1;
@@ -296,6 +304,13 @@ void ShaderProgram::unbindTexture(std::string uniform, int type) {
 	glGetUniformiv(id, U(uniform), &textureSlot);
 	glActiveTexture(GL_TEXTURE0 + type);
 	glBindTexture(GL_TEXTURE_2D, 0);
+}
+void ShaderProgram::unbindTextureArray(std::string uniform, int type) {
+	int textureSlot = -1;
+	if (U(uniform) == -1) return;
+	glGetUniformiv(id, U(uniform), &textureSlot);
+	glActiveTexture(GL_TEXTURE0 + type);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 }
 void ShaderProgram::setDefaultVertexAttribute(int index, std::string name) {
 	if (index >= 0 && index < eVAttribute_MAX) {
@@ -425,6 +440,7 @@ int ShaderProgram::loadInstanceFromFile(void* data, int off) {
 		shaderTextureNames[i] = std::string((char*)offset(data, o));
 		o += shaderTextureNames[i].size() + 1;
 	}
+	debug_log("ShaderProgram loaded from file: %s\n", name.c_str());
 	return o - off;
 }
 
@@ -463,4 +479,20 @@ int ShaderProgram::getNumSaveBytes() {
 void ShaderProgram::finalizeLoad(inst_conv_map* conversionMap) {
 	Resource::finalizeLoad(conversionMap);
 	createProgram();
+}
+
+Instance* ShaderProgram::clone_this() {
+	ShaderProgram* s = (ShaderProgram*)registerInstance(new ShaderProgram(*this), true);
+	s->id = 0;
+	s->loadInterleaved = loadInterleaved;
+	for (int i = 0; i < eVAttribute_MAX; ++i) {
+		s->shaderAttributeNames[i] = shaderAttributeNames[i];
+	}
+	for (int i = 0; i < eSUniform_MAX; ++i) {
+		s->shaderUniformNames[i] = shaderUniformNames[i];
+	}
+	for (int i = 0; i < eMaterialTexture_MAX; ++i) {
+		s->shaderTextureNames[i] = shaderTextureNames[i];
+	}
+	return s;
 }

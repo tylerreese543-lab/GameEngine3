@@ -4,15 +4,21 @@
 #include "Scene.h"
 #include "Engine/tooltips.h"
 #include "AABB.h"
+#include "TextGeometry.h"
+#include "SoundInstance.h"
 int EngineGUI::selectedInstanceId = -1;
 std::string EngineGUI::selectedInstanceHash = "";
 
 
 int EngineGUI::eyeDropperId = -1;
+int EngineGUI::eyeDropperSpecificType = -1;
 int EngineGUI::eyeDropperToUpdateId = -1;
 int EngineGUI::eyeDropperReason = -1;
 int EngineGUI::instanceAddParentId = -1;
+int EngineGUI::currentSamplesAudioPlayback = 0;
+int EngineGUI::maxSamplesAudioPlayback = 0;
 int EngineGUI::currentSelectionDropdown = 0;
+int EngineGUI::currentSelectionDropdown2 = 0;
 pugi::xml_document EngineGUI::tooltipsXML;
 bool EngineGUI::wasXMLSuccessful = false;
 const int EngineGUI::EDITOR_ADD_INSTANCE[] = {
@@ -23,7 +29,10 @@ const int EngineGUI::EDITOR_ADD_INSTANCE[] = {
 	Instance::InstanceType_ShaderResource,
 	Instance::InstanceType_ImageResource,
 	Instance::InstanceType_Material,
-	Instance::InstanceType_Geometry
+	Instance::InstanceType_LuaResource,
+	Instance::InstanceType_Geometry,
+	Instance::InstanceType_TextGeometry,
+	Instance::InstanceType_Audio
 };
 
 const std::string EngineGUI::placeholderNoInstance = "No instance selected";
@@ -114,13 +123,13 @@ void EngineGUI::DrawHierarchyNode(Instance* instance) {
 		if (isEyeDropping()) {
 			eyeDropperId = instance->getId();
 			EngineGUI::isInEyeDropperMode = false;
-			printf("Eye dropped on ID #%d \"%s\"\n", eyeDropperId, instance->name.c_str());
+			debug_log("Eye dropped on ID #%d \"%s\"\n", eyeDropperId, instance->name.c_str());
 		}
 		else {
 			selectedInstanceHash = instance->getEngineGUIHash();
 			selectedInstanceId = instance->getId();
 			newInstanceSelected = true;
-			printf("Selected instance ID #%d \"%s\"\n", selectedInstanceId, instance->name.c_str());
+			debug_log("Selected instance ID #%d \"%s\"\n", selectedInstanceId, instance->name.c_str());
 		}
 	}
 
@@ -181,22 +190,23 @@ void EngineGUI::DrawInspectorPanel(Instance* inst) {
 
 	if (hasEyeDropCompleted(inst->getId())) {
 		inst->setParent(Instance::getInstanceById(eyeDropperId));
-		endEyeDropper();
+		endEyeDropper(nullptr);
+
 	}
 	ImGui::InputText("Parent", placeholderName(inst->parent), ImGuiInputTextFlags_ReadOnly);
 	if (ImGui::Button("Select Parent...")) {
 		startEyeDropper(inst->getId());
 	}
-	if (inst->type == Instance::InstanceType_Mesh) {
+	if (Instance::isInstanceOf(inst->type, Instance::InstanceType_Mesh)) {
 		Mesh* mesh = (Mesh*)inst;
 
 		if (hasEyeDropCompleted(inst->getId(), 1)) {
-			mesh->material = eyeDropperId;
-			endEyeDropper();
+			endEyeDropper(&mesh->material);
+			mesh->VAODirty = true;
 		}
 		if (hasEyeDropCompleted(inst->getId(), 2)) {
-			mesh->geometry = eyeDropperId;
-			endEyeDropper();
+			endEyeDropper(&mesh->geometry);
+			mesh->VAODirty = true;
 		}
 		ImGui::InputFloat3("Position", (float*)&mesh->position);
 		renderTooltipForItem(IDS_IATTR_POSITION);
@@ -210,12 +220,46 @@ void EngineGUI::DrawInspectorPanel(Instance* inst) {
 		renderTooltipForItem(IDS_IATTR_MATERIAL);
 		if (ImGui::Button("Select Material...")) {
 			startEyeDropper(inst->getId(), 1);
+			//eyeDropperSpecificType = Instance::InstanceType_Material;
 		}
-		Instance* meshGeom = Instance::getInstanceById(mesh->geometry);
-		ImGui::InputText("Geometry", placeholderName(meshGeom), ImGuiInputTextFlags_ReadOnly);
-		renderTooltipForItem(IDS_IATTR_GEOMETRY);
-		if (ImGui::Button("Select Geometry...")) {
-			startEyeDropper(inst->getId(), 2);
+
+		if (inst->type == Instance::InstanceType_Mesh) {
+			Instance* meshGeom = Instance::getInstanceById(mesh->geometry);
+			ImGui::InputText("Geometry", placeholderName(meshGeom), ImGuiInputTextFlags_ReadOnly);
+			renderTooltipForItem(IDS_IATTR_GEOMETRY);
+			if (ImGui::Button("Select Geometry...")) {
+				startEyeDropper(inst->getId(), 2);
+				eyeDropperSpecificType = Instance::InstanceType_Geometry;
+			}
+
+		}
+		if (inst->type == Instance::InstanceType_TextGeometry) {
+			TextGeometry* m = (TextGeometry*)inst;
+			if (newInstanceSelected) {
+				auto it = TextGeometry::fontCharacterMaps.find(m->font);
+				if (it != TextGeometry::fontCharacterMaps.end()){
+					currentSelectionDropdown = std::distance(TextGeometry::fontCharacterMaps.begin(), it);
+				}
+				else {
+					currentSelectionDropdown = -1;
+				}
+			}
+			if (DrawDropdown("Font", TextGeometry::fontNames.data(), TextGeometry::fontNames.size()) != -1) {
+				m->setFont(TextGeometry::fontNames[currentSelectionDropdown]);
+			}
+
+			if (ImGui::InputText("Text", &m->text)) {
+				m->isDirty = true;
+			}
+
+		}
+		
+		ImGui::Checkbox("Backface Culling", &(mesh->cull));
+		if (newInstanceSelected) {
+			currentSelectionDropdown2 = mesh->renderLayer;
+		}
+		if (DrawDropdown("Render Layer", (std::string*)Mesh::renderLayerNames, eRenderLayer_MAX, &currentSelectionDropdown2) != -1) {
+			mesh->renderLayer = currentSelectionDropdown2;
 		}
 		return;
 	}
@@ -226,21 +270,22 @@ void EngineGUI::DrawInspectorPanel(Instance* inst) {
 		renderTooltipForItem(IDS_IATTR_POSITION);
 		ImGui::InputFloat3("Rotation", (float*)&m->rotation);
 		renderTooltipForItem(IDS_IATTR_ROTATION);
+		ImGui::Checkbox("Orthographic", &m->isOrthographic);
+		ImGui::SliderFloat("Field Of View", &m->fov, 0.0f, 180.0f, "FOV: %.3f deg");
 	}
 	if (inst->type == Instance::InstanceType_Scene) {
 		Scene* m = (Scene*)inst;
 		if (hasEyeDropCompleted(inst->getId(), 1)) {
-			m->hitboxShader = eyeDropperId;
-			endEyeDropper();
+			endEyeDropper(&m->hitboxShader);
 		}
 		if (hasEyeDropCompleted(inst->getId(), 2)) {
-			m->startCamera = eyeDropperId;
-			endEyeDropper();
+			endEyeDropper(&m->startCamera);
 		}
 		ImGui::InputText("Start Camera", placeholderName(Instance::getInstanceById(m->startCamera)), ImGuiInputTextFlags_ReadOnly);
 		renderTooltipForItem(IDS_IATTR_GEOMETRY);
 		if (ImGui::Button("Select Start Camera...")) {
 			startEyeDropper(inst->getId(), 2);
+			eyeDropperSpecificType = Instance::InstanceType_Camera;
 		}
 	}
 	if (inst->type == Instance::InstanceType_Collision3D) {
@@ -261,16 +306,26 @@ void EngineGUI::DrawInspectorPanel(Instance* inst) {
 
 		for (int i = 0; i < eMaterialTexture_MAX; i++) {
 			if (hasEyeDropCompleted(inst->getId(), i + 1)) {
-				printf("Eye dropper completed for target %d\n", i);
-				m->setTextureById(eyeDropperId, i);
-				endEyeDropper();
+				debug_log("Eye dropper completed for target %d\n", i);
+				if (isEyeDropperValidAndOfType(Instance::InstanceType_ImageResource)) {
+					m->setTextureById(eyeDropperId, i);
+				}
+				else {
+					m->setTextureById(-1, i);
+				}
+				endEyeDropper(nullptr);
 			}
 		}
 
 		if (hasEyeDropCompleted(inst->getId(), 5)) {
-			printf("Eye dropper completed for shader\n");
-			m->setShader((ShaderProgram*)Instance::getInstanceById(eyeDropperId));
-			endEyeDropper();
+			debug_log("Eye dropper completed for shader\n");
+			if (isEyeDropperValidAndOfType(Instance::InstanceType_ShaderProgram)) {
+				m->setShader((ShaderProgram*)Instance::getInstanceById(eyeDropperId));
+			}
+			else {
+				m->setShader(nullptr);
+			}
+			endEyeDropper(nullptr);
 		}
 
 		ImGui::ColorEdit3("Albedo Color", (float*)&m->diffuseColor);
@@ -284,22 +339,22 @@ void EngineGUI::DrawInspectorPanel(Instance* inst) {
 		ImGui::InputText("Albedo Texture", placeholderName(Instance::getInstanceById(m->getTextureInstanceId(eMaterialTexture_Diffuse))), ImGuiInputTextFlags_ReadOnly);
 		renderTooltipForItem(IDS_IATTR_GEOMETRY);
 		if (ImGui::Button("Select Albedo Texture...")) {
-			startEyeDropper(inst->getId(), 1, true);
+			startEyeDropper(inst->getId(), eMaterialTexture_Diffuse + 1, true);
 		}
 		ImGui::InputText("Normal Map", placeholderName(Instance::getInstanceById(m->getTextureInstanceId(eMaterialTexture_Normal))), ImGuiInputTextFlags_ReadOnly);
 		renderTooltipForItem(IDS_IATTR_GEOMETRY);
 		if (ImGui::Button("Select Normal Map...")) {
-			startEyeDropper(inst->getId(), 2, true);
+			startEyeDropper(inst->getId(), eMaterialTexture_Normal + 1, true);
 		}
 		ImGui::InputText("Specular Map", placeholderName(Instance::getInstanceById(m->getTextureInstanceId(eMaterialTexture_Specular))), ImGuiInputTextFlags_ReadOnly);
 		renderTooltipForItem(IDS_IATTR_GEOMETRY);
 		if (ImGui::Button("Select Specular Map...")) {
-			startEyeDropper(inst->getId(), 3, true);
+			startEyeDropper(inst->getId(), eMaterialTexture_Specular + 1, true);
 		}
 		ImGui::InputText("Ambient Occlusion Map", placeholderName(Instance::getInstanceById(m->getTextureInstanceId(eMaterialTexture_AmbientOcclusion))), ImGuiInputTextFlags_ReadOnly);
 		renderTooltipForItem(IDS_IATTR_GEOMETRY);
 		if (ImGui::Button("Select Ambient Occlusion Map...")) {
-			startEyeDropper(inst->getId(), 4, true);
+			startEyeDropper(inst->getId(), eMaterialTexture_AmbientOcclusion + 1, true);
 		}
 		ImGui::InputText("Shader", placeholderName(Instance::getInstanceById(m->getShaderInstanceId())), ImGuiInputTextFlags_ReadOnly);
 		renderTooltipForItem(IDS_IATTR_GEOMETRY);
@@ -309,6 +364,8 @@ void EngineGUI::DrawInspectorPanel(Instance* inst) {
 		if (ImGui::Button("Auto-Prepare Material")) {
 			m->autoPrepare(true);
 		};
+
+		ImGui::Checkbox("Transparent", &(m->isTransparent));
 	}
 
 	if (Instance::isInstanceOf(inst->type, Instance::InstanceType_Resource)) {
@@ -340,7 +397,7 @@ void EngineGUI::DrawInspectorPanel(Instance* inst) {
 				currentSelectionDropdown = ((ImageResource*)inst)->textureType + 1;
 			}
 
-			if (DrawDropdown("ImageTextureLocation", (std::string*)ImageResource::textureTypeNames, 5) != -1) {
+			if (DrawDropdown("Texture Port", (std::string*)ImageResource::textureTypeNames, 5) != -1) {
 				imgRes->textureType = currentSelectionDropdown - 1;
 				imgRes->loadFromFile(imgRes->filePath);
 			}
@@ -369,9 +426,77 @@ void EngineGUI::DrawInspectorPanel(Instance* inst) {
 	if (inst->type == Instance::InstanceType_ShaderProgram) {
 			if (ImGui::Button("Compile Shader...")) {
 				ShaderProgram* m = (ShaderProgram*)inst;
-				m->createProgram();
+				m->createProgram(true);
 			}
 			return;
+	}
+
+	if (inst->type == Instance::InstanceType_UIRootNode) {
+		UIRootNode* m = (UIRootNode*)inst;
+
+		if (hasEyeDropCompleted(inst->getId(), 1)) {
+			endEyeDropper(&m->camera);
+		}
+
+		ImGui::InputText("Camera", placeholderName(Instance::getInstanceById(m->camera)), ImGuiInputTextFlags_ReadOnly);
+		renderTooltipForItem(IDS_IATTR_GEOMETRY);
+		if (ImGui::Button("Select Camera...")) {
+			startEyeDropper(inst->getId(), 1);
+			eyeDropperSpecificType = Instance::InstanceType_Camera;
+		}
+	}
+
+	if (inst->type == Instance::InstanceType_Audio) {
+		Audio* m = (Audio*)inst;
+
+		if (newInstanceSelected) {
+			currentSamplesAudioPlayback = m->getTimestampSamples();
+			maxSamplesAudioPlayback = m->getMaxSamples();
+		}
+		if (hasEyeDropCompleted(inst->getId(), 1)) {
+			endEyeDropper(&m->group);
+		}
+		if (ImGui::InputText("File Path", &m->audioName, ImGuiInputTextFlags_EnterReturnsTrue)) {
+			Audio::loadSound(m->audioName);
+			m->setAudioSource(m->audioName);
+		}
+		if (ImGui::Button("Play")) {
+			m->play();
+		}
+		if (ImGui::Button("Stop")) {
+			m->stop();
+		}
+		ImGui::PushItemWidth(-1.0f);
+		if (ImGui::SliderInt("##AudioSeeker", &currentSamplesAudioPlayback, 0, m->getMaxSamples(), "")) {
+			// Handle manual dragging adjustments here
+		}
+		ImGui::PopItemWidth();
+
+		if (ImGui::IsItemDeactivatedAfterEdit()) {
+    // The user just let go of the mouse! 
+			m->setTimestampSamples(currentSamplesAudioPlayback);
+		}
+// Keep your standard audio engine safety check
+		if (!ImGui::IsItemActive()) {
+			currentSamplesAudioPlayback = m->getTimestampSamples();
+		}
+
+		char timeOverlay[32];
+snprintf(timeOverlay, sizeof(timeOverlay), "%02d:%02d / %02d:%02d", 
+         (int)floor(m->getTimestampSeconds()) / 60, (int)floor(m->getTimestampSeconds()) % 60, 
+         (int)floor(m->getMaxSeconds()) / 60, (int)floor(m->getMaxSeconds()) % 60);
+// 4. Position and render the text directly below
+// You can use ImGui::SameLine() variations if you want to align it to the right, 
+// but by default, this prints left-aligned on the very next line:
+ImGui::Text("%s", timeOverlay);
+
+		ImGui::InputText("Sound Group", placeholderName(Instance::getInstanceById(m->group)), ImGuiInputTextFlags_ReadOnly);
+		renderTooltipForItem(IDS_IATTR_GEOMETRY);
+		if (ImGui::Button("Select Sound Group...")) {
+			startEyeDropper(inst->getId(), 1);
+		}
+
+
 	}
 }
 
@@ -381,13 +506,17 @@ void EngineGUI::startEyeDropper(int ID, int reason, bool fullyCancel) {
 	eyeDropperReason = reason;
 	fullyCancelEyeDropper = fullyCancel;
 	isInEyeDropperMode = true;
+	eyeDropperSpecificType = -1;
 }
 
 bool EngineGUI::isEyeDropping() {
 	return isInEyeDropperMode;
 }
 
-void EngineGUI::endEyeDropper() {
+void EngineGUI::endEyeDropper(int* port) {
+	if (port && isEyeDropperValidAndOfType(eyeDropperSpecificType)) {
+		*port = eyeDropperId;
+	}
 	eyeDropperId = -1;
 	eyeDropperToUpdateId = -1;
 	eyeDropperReason = -1;
@@ -472,34 +601,7 @@ void EngineGUI::DrawAddInstanceModalNode() {
 }
 
 Instance* EngineGUI::newInstanceFromType(int type, int p) {
-	Instance* i = nullptr;
-	if (type == Instance::InstanceType_Camera) {
-		i = new Camera();
-	}
-	else if (type == Instance::InstanceType_Mesh) {
-		i = new Mesh();
-	} 
-	else if (type == Instance::InstanceType_Collision3D) {
-		i = new Collision3D();
-	} 
-	else if (type == Instance::InstanceType_ShaderResource) {
-		i = new ShaderResource();
-	}
-	else if (type == Instance::InstanceType_ShaderProgram) {
-		i = new ShaderProgram();
-	}
-	else if (type == Instance::InstanceType_ImageResource) {
-		i = new ImageResource();
-	}
-	else if (type == Instance::InstanceType_Material) {
-		i = new Material();
-	}
-	else if (type == Instance::InstanceType_LuaResource) {
-		i = new LuaResource();
-	}
-	else if (type == Instance::InstanceType_Geometry) {
-		i = new Geometry();
-	}
+	Instance* i = Scene::newInstanceFromType(type);
 	if (i && p) {
 		i->setParent(Instance::getInstanceById(p)); 
 	}
@@ -517,7 +619,11 @@ void EngineGUI::renderTooltipForItem(int tooltipType) {
 
 int EngineGUI::DrawDropdown(std::string name, std::string options[], int numChoices, int* selection) {
 	int selectionDropdown = -1;
-	if (ImGui::BeginCombo(name.c_str(), options[*selection].c_str())) {
+	std::string previewText = "";
+	if (*selection != -1) {
+		previewText = options[*selection];
+	}
+	if (ImGui::BeginCombo(name.c_str(), previewText.c_str())) {
 
 		if (ImGui::IsWindowAppearing()) {
 			*selection = 0;
@@ -539,4 +645,13 @@ int EngineGUI::DrawDropdown(std::string name, std::string options[], int numChoi
 	}
 
 	return selectionDropdown;
+}
+
+bool EngineGUI::isEyeDropperValidAndOfType(int type) {
+	Instance* i = Instance::getInstanceById(eyeDropperId);
+	if (i) {
+		return Instance::isInstanceOf(i->type, type) || type == -1;
+	} else {
+		return false;
+	}
 }

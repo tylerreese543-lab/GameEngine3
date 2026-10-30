@@ -7,6 +7,8 @@
 #include "Shader.h"
 #include "Value.h"
 #include "AABB.h"
+#include "SoundInstance.h"
+#include "TextGeometry.h"
 sol::state LuaResource::lua;
 LuaResource::LuaResource(std::string filepath) : Resource() {
 	name = "Script";
@@ -62,6 +64,8 @@ sol::object LuaResource::InstanceToSolObj(sol::this_state ts, Instance* i) {
 		return sol::make_object(ts, (Collision3D*)i);
 	case InstanceType_ProceduralGeometry:
 		return sol::make_object(ts, (ProceduralGeometry*)i);
+	case InstanceType_TextGeometry:
+		return sol::make_object(ts, (TextGeometry*)i);
 	default:
 		//Base instance class - no casting necessary
 		return sol::make_object(ts, i);
@@ -158,8 +162,13 @@ void LuaResource::InitializeLua() {
 		"Points", GL_POINTS
 	);
 	lua.new_usertype<mat3>("Matrix3"
-		//Mat3 not accessible to lua yet, placeholder
 	);
+	sol::table matrix3_table = lua["Matrix3"];
+
+	matrix3_table["RotateY"]   = &mat3::yrot;
+    matrix3_table["RotateX"]   = &mat3::xrot;
+    matrix3_table["RotateZ"]   = &mat3::zrot;
+    matrix3_table["RotateYXZ"] = &mat3::yxz;
 
 	lua.new_usertype<vec3>("Vector3",
 		// Allow creating vectors via: Vector3.new() or Vector3.new(x, y, z)
@@ -354,7 +363,28 @@ void LuaResource::InitializeLua() {
 			}
 		)
 	);
-
+	auto TextGeometryType = lua.new_usertype<TextGeometry>("TextObject",
+		sol::base_classes, sol::bases<Mesh, Instance>(),
+		"new", sol::factories([](sol::this_state ts) {
+			return InstanceToSolObj(ts, new TextGeometry());
+			}),
+		"Font", sol::property(
+			[](TextGeometry* self, sol::this_state ts) {
+				return self->font;
+			},
+			[](TextGeometry* self, sol::this_state ts, std::string string) {
+				return self->setFont(string);
+			}
+		),
+		"Text", sol::property(
+			[](TextGeometry* self, sol::this_state ts) {
+				return self->text;
+			},
+			[](TextGeometry* self, sol::this_state ts, std::string string) {
+				return self->setText(string);
+			}
+		)
+	);
 	auto MaterialType = lua.new_usertype<Material>("Material",
 		sol::base_classes, sol::bases<Instance>(),
 		"new", sol::factories([](sol::this_state ts) {
@@ -455,7 +485,7 @@ void LuaResource::InitializeLua() {
 		)
 	);
 
-	auto Collision2DType = lua.new_usertype<Collision2D>("Collision2D",
+	auto Collision2DType = lua.new_usertype<Collision2D>("AABBCollision2D",
 		sol::base_classes, sol::bases<Instance>(),
 		"new", sol::factories([](sol::this_state ts) {
 			return InstanceToSolObj(ts, new Collision2D());
@@ -493,7 +523,7 @@ void LuaResource::InitializeLua() {
 		}
 	);
 
-	auto Collision3DType = lua.new_usertype<Collision3D>("Collision3D",
+	auto Collision3DType = lua.new_usertype<Collision3D>("AABBCollision3D",
 		sol::base_classes, sol::bases<Instance>(),
 		"new", sol::factories([](sol::this_state ts) {
 			return InstanceToSolObj(ts, new Collision3D());
@@ -506,6 +536,21 @@ void LuaResource::InitializeLua() {
 				self->setPosition(pos);
 			}
 		),
+		"SetX", [](Collision3D* self, sol::this_state ts, float x) {
+				vec3 pos = self->getPosition();
+				pos.X = x;
+				self->setPosition(pos);
+		},
+		"SetY", [](Collision3D* self, sol::this_state ts, float y) {
+				vec3 pos = self->getPosition();
+				pos.Y = y;
+				self->setPosition(pos);
+			},
+		"SetZ", [](Collision3D* self, sol::this_state ts, float z) {
+				vec3 pos = self->getPosition();
+				pos.Z = z;
+				self->setPosition(pos);
+			},
 
 		"Size", sol::property(
 			[](Collision3D* self, sol::this_state ts) {
@@ -562,8 +607,14 @@ void LuaResource::InitializeLua() {
 		"BufferUpdateMode", &ProceduralGeometry::bufferUpdateMode,
 		"IsDrawElements", &ProceduralGeometry::drawElements
 		);
-
-
+	auto AudioType = lua.new_usertype<InstanceValue>("Audio",
+		sol::base_classes, sol::bases<Value, Instance>(),
+		"new", sol::factories([](sol::this_state ts) {
+			return InstanceToSolObj(ts, new Audio());
+		}),
+		"Play", Audio::play,
+		"Stop", Audio::stop
+	);
 	//This freaking blows, but it works i guess
 	InstanceType[sol::meta_function::index] =			&LuaResource::__luaIndex;
 	ResourceType[sol::meta_function::index] =			&LuaResource::__luaIndex;
@@ -586,6 +637,9 @@ void LuaResource::InitializeLua() {
 	Collision3DType[sol::meta_function::index] =		&LuaResource::__luaIndex;
 	ProceduralGeometryType[sol::meta_function::index] =	&LuaResource::__luaIndex;
 	GeometryType[sol::meta_function::index] =			&LuaResource::__luaIndex;
+	TextGeometryType[sol::meta_function::index] =		&LuaResource::__luaIndex;
+	AudioType[sol::meta_function::index] =				&LuaResource::__luaIndex;
+	
 }
 LuaResource::~LuaResource() {
 
@@ -643,6 +697,7 @@ void LuaResource::loadScript() {
 	env["KeyboardData"] = &(Graphics::getInstance()->keyboard_data);
 	env["GamepadData"] = &(Graphics::getInstance()->gamepad_data);
 	env["time"] = &glfwGetTime;
+	debug_log("Scene: %s\n", Scene::getCurrentScene()->name.c_str());
 	env["scene"] = InstanceToSolObj(sol::this_state(lua), Scene::getCurrentScene());
 	// 4. EXECUTE the attached function once to register your "Tick" block inside 'env'
 	sol::protected_function_result run_result = script_func();
@@ -692,30 +747,44 @@ int LuaResource::saveInstanceToFile(FILE* file) {
 	int offset = 0;
 	offset += Resource::saveInstanceToFile(file);
 	if (strlen(source) > 0) {
-		size_t sourceLength = strlen(source);
-		fwrite(source, sizeof(char), sourceLength + 1, file);
+		int sourceLength = strlen(source);
+		offset += fwrite(&sourceLength, sizeof(int), 1, file);
+		offset += fwrite(source, sizeof(char), sourceLength, file);
+		char nullTerminator = '\0';
+		offset += fwrite(&nullTerminator, sizeof(char), 1, file);
 	}
 	else {
-		fwrite("", sizeof(char), 1, file);
+
+		int sourceLength = 0;
+		offset += fwrite(&sourceLength, sizeof(int), 1, file);
+		offset += fwrite("", sizeof(char), 1, file);
 	}
 
 
-	return 0; // Return 0 to indicate success
+	return offset; // Return 0 to indicate success
 }
 
 int LuaResource::loadInstanceFromFile(void* data, int off) {
-	// Load the file path length and the file path string
+	// Load the file path leng
+	// th and the file path string
 	int o = off;
 	o += Resource::loadInstanceFromFile(data, o);
+	int sourceLength = 0;
+	sourceLength = *(int*)offset(data, o);
+	printf("Loaded script source length: %d\n", sourceLength);
+	o += sizeof(int);
 	char* src = (char*)offset(data, o);
-	source = new char[strlen(src) + 1];
-	strcpy_s((char*)source, strlen(src) + 1, src);
+	source = new char[sourceLength + 1];
+	strcpy_s((char*)source, sourceLength + 1, src);
+	o += sourceLength + 1; // Move the offset past the string and null terminator
+	printf("Loaded script source: %s\n", source);
 	return o - off; // Return 0 to indicate success
 }
 
 int LuaResource::getNumSaveBytes() {
 	int size = 0;
 	size += Resource::getNumSaveBytes();
+	size += sizeof(int);
 	size += strlen(source) + 1; // +1 for null terminator
 	return size;
 }

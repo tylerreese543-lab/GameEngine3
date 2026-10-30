@@ -6,8 +6,9 @@
 #include "Scene.h"
 #include "Material.h"
 #include "LuaResource.h"
-
 #include "EngineGUI.h"
+#include "TextGeometry.h"
+#include "SoundInstance.h"
 int main() {
 
 	Instance::registerHierarchy();
@@ -20,7 +21,11 @@ int main() {
 	LuaResource::InitializeLua();
 
 	EngineGUI::InitializeEngineGUI();
-
+	Audio::InitializeAudioEngine();
+    if (FT_Init_FreeType(&Font::ft)) {
+        std::cerr << "ERROR::FREETYPE: Could not init FreeType Library" << std::endl;
+        return -1;
+    }
 
 
 #ifndef STUDIO_EDITOR
@@ -35,22 +40,30 @@ int main() {
 	camera->fov = 70.0f;
 	camera->isEditorCamera = true;
 	scene->currentCamera = camera->getId();
-	scene->addChild(camera);
+	
+	UIRootNode* uir = new UIRootNode();
+	uir->setParent(scene);
+	scene->uiRoot = uir->getId();
 	Instance* resources = new Instance();
 	resources->name = "Resources";
 	resources->setParent(scene);
 
 
 
-	ShaderProgram* sprog2 = new ShaderProgram("res://shader/vs_hitbox.glsl", "res://shader/fs_hitbox.glsl");
-	sprog2->createProgram();
-	sprog2->setParent(resources);
-	sprog2->name = "HitboxShader";
-	scene->hitboxShader = sprog2->getId();
+	ShaderProgram* debug_shader = new ShaderProgram("core://shader/debug_vertex.glsl", "core://shader/debug_fragment.glsl");
+	debug_shader->createProgram();
+	debug_shader->setParent(resources);
+	debug_shader->name = "DebugShader";
+	scene->hitboxShader = debug_shader->getId();
+	ShaderProgram* core_shader = new ShaderProgram("core://shader/core_vertex.glsl", "core://shader/core_fragment.glsl");
+	core_shader->createProgram();
+	core_shader->setParent(resources);
+	core_shader->name = "MainShader";
 	LuaResource* script = new LuaResource("core://scripts/program.lua");
 	script->isEngineScript = true;
-	script->setParent(resources);
 	script->loadScript();
+
+	TextGeometry::loadFont("res://fonts/DroidSans.ttf");
 
 #endif
 
@@ -96,6 +109,9 @@ int main() {
 
 				Scene::getCurrentScene()->destroy();
 				Scene::loadSceneFromFile("scene.bin");
+				if (script) {
+					script->loadScript();
+				}
 			}
 			ImGui::End();
 		}
@@ -113,6 +129,7 @@ int main() {
 			if (!EngineGUI::fullyCancelEyeDropper) {
 				EngineGUI::eyeDropperId = -1;
 			}
+
 			EngineGUI::isInEyeDropperMode = false;
 			printf("Eye dropper cancelled.\n");
 		}
@@ -134,7 +151,10 @@ int main() {
 
 		Graphics::getInstance()->windowUpdate();
 	}
+
+
 	glfwTerminate();
+	TextGeometry::destroyFreeType();
 	Scene::getCurrentScene()->destroy();
 	return 0;
 

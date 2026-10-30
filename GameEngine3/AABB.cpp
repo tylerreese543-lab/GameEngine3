@@ -128,14 +128,15 @@ bool Collision3D::isInside(vec3 point) const {
 }
 
 Instance* Collision2D::clone_this() {
-	Collision2D* newCollider = (Collision2D*)registerInstance(new Collision2D(), true);
+	Collision2D* newCollider = (Collision2D*)registerInstance(new Collision2D(*this), true);
 	newCollider->setPosition(this->getPosition());
 	newCollider->setSize(this->getSize());
 	return newCollider;
 }
 
 Instance* Collision3D::clone_this() {
-	Collision3D* newCollider = (Collision3D*)registerInstance(new Collision3D(), true);
+	Collision3D* newCollider = (Collision3D*)registerInstance(new Collision3D(*this), true);
+	allCollisionBoxes.insert(newCollider->getId());
 	newCollider->setPosition(this->getPosition());
 	newCollider->setSize(this->getSize());
 	return newCollider;
@@ -253,3 +254,13 @@ void Collision3D::RenderAllCollisionBoxesDebug() {
 		((Collision3D*)getInstanceById(i))->debugRender();
 	}
 }
+
+int Collision3D::destroy() {
+	allCollisionBoxes.erase(getId());
+	return Instance::destroy();
+}
+
+int Collision3D::getNumSaveBytes() {
+	return 2 * sizeof(vec3) + Instance::getNumSaveBytes();
+}
+

@@ -47,9 +47,11 @@ public:
 
 	vec3 getCenter() const;
 	Collision3D();
-
+	virtual int destroy();
 	virtual int saveInstanceToFile(FILE* file);
 	virtual int loadInstanceFromFile(void* data, int offset = 0);
+
+	virtual int getNumSaveBytes();
 
 	void debugRender();
 };
@@ -73,6 +75,7 @@ public:
 
 	virtual int saveInstanceToFile(FILE* file);
 	virtual int loadInstanceFromFile(void* data, int offset = 0);
+
 
 	Collision2D();
 };

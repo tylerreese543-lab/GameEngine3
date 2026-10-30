@@ -1,5 +1,13 @@
 #include "Material.h"
 
+
+
+const std::string Material::containsMaterialTexture[] = {
+	"m_HasDiffuseTexture",
+	"m_HasAmbientOcclusionTexture",
+	"m_HasNormalTexture",
+	"m_HasSpecularTexture",
+};
 Material::Material() : Instance() {
 
 	diffuseColor = vec3(1.0);
@@ -13,6 +21,7 @@ Material::Material() : Instance() {
 	shader = -1;
 	type = InstanceType_Material;
 	name = "Material";
+	isTransparent = false;
 	SetTextureUseFlags(false, false, false, false);
 }
 
@@ -59,9 +68,11 @@ void Material::applyMaterial() {
 	for (int i = 0; i < eMaterialTexture_MAX; ++i) {
 		if (textureUseFlags[i] == true) {
 			program->unbindTexture(program->shaderTextureNames[i], i);
+			program->setUniform1i(containsMaterialTexture[i], 0);
 			ImageResource* img = isImage(getInstanceById(textures[i]));
 			if (!img) continue;
-			program->bindTexture(program->shaderTextureNames[i], img, i);
+			int boundSuccessfully = program->bindTexture(program->shaderTextureNames[i], img, i);
+			program->setUniform1i(containsMaterialTexture[i], boundSuccessfully == 0 ? 1 : 0);
 		}
 	}
 
@@ -101,8 +112,12 @@ void Material::setTextureById(int id, int target) {
 }
 void Material::setShader(ShaderProgram* i) {
 	i = isShader(i);
-	if (!i) return;
-	shader = i->getId();
+	if (!i) {
+		shader = -1;
+	}
+	else {
+		shader = i->getId();
+	}
 }
 
 int Material::getShaderInstanceId() {
